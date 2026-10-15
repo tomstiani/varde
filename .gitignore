@@ -1,0 +1,20 @@
+# Local environment and credentials
+.env
+.env.*
+!.env.example
+secrets/
+secrets.*
+
+# Private keys and certificates
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+
+# Local-only configuration and data
+*.local
+*.sqlite
+*.sqlite3
+*.db
