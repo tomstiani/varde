@@ -2,7 +2,9 @@
 
 A self-hosted backend and native Android app for turning homelab alerts into more glanceable notifications and rich in-app views.
 
-The project is at the idea stage. This README describes the intended product; it does not describe a working implementation.
+The project is in architecture planning. This README describes the intended product, not a working backend or Android app. [Alert-view experiment findings](docs/research/alert-view-experiments.md) are retained as documentation; runnable experiments and prototypes are intentionally not committed.
+
+See the [backend architecture proposal](docs/architecture/backend.md) for the agreed contracts, proposed modules, failure handling, and deferred choices.
 
 ## Why
 
@@ -11,10 +13,10 @@ Homelab services and agents can send useful alerts, but a stream of plain-text n
 ## How it should work
 
 1. An alert source, such as an n8n workflow, sends an alert to the self-hosted backend.
-2. The backend uses a hosted model API to create a declarative JSON layout from the alert. The model selects and arranges approved components; it does not send executable JavaScript or native code.
-3. The backend stores the original alert and generated layout in alert history.
-4. A push service signals the Android app that an alert is ready.
-5. The app shows an Android notification with a plain-text fallback. Tapping it opens the rich view, which the app fetches from the backend.
+2. The backend durably retains the original alert and pending processing before acknowledging acceptance.
+3. Hosted models select supplied data for approved components. The backend assembles and validates a declarative JSON layout, retaining it or falling back to the original text. Models do not send executable JavaScript or native code.
+4. Best-effort push signals the Android app; timing relative to generation remains undecided.
+5. Authenticated change sync recovers missed arrivals and later presentation updates. The app loads history on demand and opens a rich view or the original text.
 
 The backend runs in the user's homelab. The app reaches it over the user's chosen network path, such as Pangolin, Tailscale, or the public internet. The project does not depend on a particular network access service.
 
@@ -35,4 +37,4 @@ Alerts should include an explicit priority or severity. Initially, the model use
 
 ## Not decided yet
 
-The implementation has not chosen specific push or model providers, a backend or Android technology stack, or the JSON component schema. These choices should be made during planning and implementation.
+The agreed backend design uses one application and SQLite. The application framework, concrete push provider, production model configuration, notification timing, and detailed wire formats remain undecided. See the architecture proposal before choosing implementation details.
