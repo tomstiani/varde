@@ -14,7 +14,15 @@ secrets.*
 *.keystore
 
 # Local-only configuration and data
+.pi/
 *.local
 *.sqlite
 *.sqlite3
 *.db
+
+# Python caches
+__pycache__/
+
+# Local-only experiments
+/benchmarks/
+/prototypes/
