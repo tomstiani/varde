@@ -14,8 +14,8 @@ class Inbox(
     private val settings: ConnectionSettings,
     backend: Backend,
 ) {
-    private val readFailures = mutableMapOf<String, Problem>()
-    private val backend = BoundedBackend(backend) { readFailures[it] }
+    private val detailConnectionFailures = mutableMapOf<String, Problem>()
+    private val backend = BoundedBackend(backend) { detailConnectionFailures[it] }
     private val mutableState = MutableStateFlow(InboxState())
     val state = mutableState.asStateFlow()
     private var historyJob: Job? = null
@@ -98,7 +98,7 @@ class Inbox(
         if (state.value.loading) return
         historyJob?.cancel()
         val requestRevision = ++historyRevision
-        readFailures.clear()
+        detailConnectionFailures.clear()
         val connections = state.value.connections
         historySession = null
         if (connections.isEmpty()) {
@@ -109,7 +109,7 @@ class Inbox(
         historyJob = scope.launch {
             val batch = HistorySession.begin(connections).nextBatch(backend)
             if (historyRevision == requestRevision) {
-                val result = applyReadFailures(batch)
+                val result = applyDetailFailures(batch)
                 historySession = result.session
                 mutableState.update {
                     val retained = it.items.filter { item -> item.key.connectionId in result.problems }
@@ -141,7 +141,7 @@ class Inbox(
         historyJob = scope.launch {
             val batch = session.nextBatch(backend)
             if (historyRevision == requestRevision) {
-                val result = applyReadFailures(batch)
+                val result = applyDetailFailures(batch)
                 historySession = result.session
                 mutableState.update {
                     it.copy(
@@ -158,15 +158,15 @@ class Inbox(
         }
     }
 
-    private fun applyReadFailures(batch: HistoryBatch) = batch.copy(
-        items = batch.items.filterNot { it.key.connectionId in readFailures },
-        problems = batch.problems + readFailures,
-        session = batch.session.withFailures(readFailures, historySession),
+    private fun applyDetailFailures(batch: HistoryBatch) = batch.copy(
+        items = batch.items.filterNot { it.key.connectionId in detailConnectionFailures },
+        problems = batch.problems + detailConnectionFailures,
+        session = batch.session.withFailures(detailConnectionFailures, historySession),
     )
 
     private fun pauseHistoryFromDetail(connectionId: String, problem: Problem) {
-        readFailures[connectionId] = problem
-        historySession = historySession?.withFailures(readFailures)
+        detailConnectionFailures[connectionId] = problem
+        historySession = historySession?.withFailures(detailConnectionFailures)
         mutableState.update {
             it.copy(
                 problems = it.problems + (connectionId to problem),

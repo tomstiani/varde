@@ -303,6 +303,55 @@ class PartialOutageTest {
         assertEquals(1, calls.count { it.first == slow.id })
     }
 
+    @Test fun detailFailureDuringFreshRefreshCommitsAPausedSourceWithoutAPreviousSession() = runTest {
+        var refreshing = false
+        var revoked = false
+        var recovered = false
+        val late = CompletableDeferred<HistoryPage>()
+        val calls = mutableListOf<Pair<String, String?>>()
+        val backend = object : Backend {
+            override suspend fun history(connection: Connection, cursor: String?): HistoryPage {
+                calls += connection.id to cursor
+                if (!refreshing) return HistoryPage(listOf(if (connection.id == home.id) homeRow else workRow))
+                if (connection.id == home.id) {
+                    if (!recovered) return withContext(NonCancellable) { late.await() }
+                    return HistoryPage((1000 downTo 951).map { row("recovered-$it", it.toLong()) }, "recovered-older")
+                }
+                return HistoryPage(listOf(row("fresh-work", 300)))
+            }
+            override suspend fun read(connection: Connection, id: String): AlertDetail {
+                if (revoked) throw InboxFailure(Problem.AUTHENTICATION)
+                return AlertDetail(homeRow, "Retained original")
+            }
+        }
+        val inbox = Inbox(this, Settings(listOf(home, work)), backend)
+        runCurrent()
+        inbox.open(AlertKey(home.id, homeRow.id))
+        runCurrent()
+        refreshing = true
+        inbox.refresh()
+        runCurrent()
+        revoked = true
+        inbox.retryDetail()
+        runCurrent()
+        late.complete(HistoryPage(listOf(row("obsolete-home", 999)), "must-stay-paused"))
+        runCurrent()
+        assertEquals(listOf("fresh-work", homeRow.id), inbox.state.value.items.map { it.row.id })
+        assertEquals(Problem.AUTHENTICATION, inbox.state.value.problems[home.id])
+        assertEquals("Retained original", inbox.state.value.detail?.alert?.summary)
+        assertTrue(inbox.state.value.detail!!.stale)
+        assertFalse(inbox.state.value.historyComplete)
+        assertFalse(inbox.state.value.hasMore)
+        repeat(3) { inbox.loadOlder(); runCurrent() }
+        assertEquals(listOf(home.id to null, work.id to null, home.id to null, work.id to null), calls)
+        revoked = false
+        recovered = true
+        inbox.retryConnection(home.id)
+        runCurrent()
+        assertTrue(inbox.state.value.problems.isEmpty())
+        assertTrue(inbox.state.value.hasMore)
+    }
+
     private fun row(id: String, seconds: Long) = AlertRow(id, java.time.Instant.ofEpochSecond(seconds).toString(), id, "normal", "2026-01-01T00:00:00Z", Presentation("fallback", 1))
     private class Settings(private var connections: List<Connection>) : ConnectionSettings {
         override suspend fun load() = connections

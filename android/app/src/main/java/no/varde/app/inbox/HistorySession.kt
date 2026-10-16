@@ -21,6 +21,7 @@ internal class HistorySession private constructor(private val sources: List<Sour
 
     fun withFailures(failures: Map<String, Problem>, previous: HistorySession? = this): HistorySession {
         if (failures.isEmpty()) return this
+        // Roll back only failed sources to committed positions; keep healthy continuation progress.
         return HistorySession(sources.map { source ->
             val problem = failures[source.connection.id]
             if (problem == null) source else {

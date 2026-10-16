@@ -11,6 +11,7 @@ internal class BoundedBackend(private val delegate: Backend, private val history
     override suspend fun history(connection: Connection, cursor: String?) = request {
         historyProblem(connection.id)?.let { throw InboxFailure(it) }
         val page = delegate.history(connection, cursor)
+        // Recheck after suspension: a detail failure may have paused this source.
         historyProblem(connection.id)?.let { throw InboxFailure(it) }
         page
     }
