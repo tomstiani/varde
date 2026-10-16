@@ -51,6 +51,8 @@ Cursor tokens are integrity-protected and bound to a store, order and limit. The
 - `400 invalid_cursor`: malformed, oversized, modified, foreign-store or option-mismatched token. Start a fresh snapshot rather than guessing its position.
 - `401 unauthorized`: missing, invalid or revoked credential.
 - `403 forbidden`: credential has the wrong role.
-- `503 storage_unavailable`: retryable storage failure; `Retry-After: 5` is a hint, not a recovery guarantee.
+- `503 storage_unavailable`: storage unavailable or request timed out; `Retry-After: 5` is a hint, not a recovery guarantee.
+
+History requests share the backend's five-second processing/response budget after headers, including authentication and database-connection queueing. Temporary SQLite writer contention can produce `503` while the worker recovers automatically. Uninterrupted reads under a writer lock are not promised. See [worker recovery and timeout behavior](../specs/backend-worker-recovery.md).
 
 Responses use `Cache-Control: no-store`. Do not configure a proxy to cache authenticated content or log authorization headers, request bodies or cursor values.

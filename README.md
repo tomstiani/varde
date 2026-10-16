@@ -6,6 +6,8 @@ The backend uses Go, standard `net/http`, and SQLite: authenticated plain-text s
 
 [Alert-view experiment findings](docs/research/alert-view-experiments.md) are retained as documentation; runnable experiments and prototypes are intentionally not committed.
 
+The fallback worker recovers automatically from temporary SQLite writer contention. HTTP requests have a five-second processing/response budget after headers; recovery diagnostics cannot block processing or shutdown. See the [worker recovery contract](docs/specs/backend-worker-recovery.md) for precise guarantees and limits.
+
 See the [backend architecture proposal](docs/architecture/backend.md) for the agreed contracts, proposed modules, failure handling, and deferred choices.
 
 ## Repository layout
@@ -18,7 +20,7 @@ android/   Native Kotlin/Compose app: named connections and combined alert histo
 docs/      Shared architecture, research, and operational documentation
 ```
 
-Run Go commands from `backend/`; there is no root Go module or workspace. No shared runtime library or Android build scaffolding is introduced yet.
+Run Go commands from `backend/` and Gradle commands from `android/` using its checked-in wrapper. There is no root Go module or workspace, and no shared runtime library.
 
 See [coding standards](CODING_STANDARDS.md) for the human-readability and package-organization conventions.
 

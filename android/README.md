@@ -69,6 +69,8 @@ During refresh, displayed content stays visible. Successful source results repla
 
 A retained detail can be reopened without contacting a source whose history is already paused. If its body was never loaded, the app says that no retained detail is available rather than inventing a summary. **Retry detail** is an explicit body request: success can show the original, but it does not recover paused history. Use **Retry <name>** for that full refresh. A source-wide detail failure, such as revoked access, also pauses its history and marks retained content stale; a late earlier response cannot undo that failure or advance the paused source. A detail `404` is alert-specific and does not clear other rows or pause unrelated history.
 
+The Android transport's 15-second request deadline includes the network path. The current backend separately applies a five-second processing/response budget after headers, so it can return `503` sooner. Backend worker recovery does not automatically retry Android reads or recover a paused source; use the explicit actions above. See the [backend recovery contract](../docs/specs/backend-worker-recovery.md).
+
 Messages are locally defined safe categories, not copied server messages. Authentication and permission failures direct you to credentials; TLS failures direct you to the trusted certificate/URL; redirects require correcting the URL; an invalid history cursor requires a new combined refresh. A missing or unsupported history endpoint points to the URL/backend version rather than pretending an individual alert was deleted. No certificate bypass, credential forwarding, background recovery, or persistent offline cache is introduced.
 
 ## Go-backed history contract tests
