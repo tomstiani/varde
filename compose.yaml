@@ -1,0 +1,22 @@
+services:
+  varde:
+    build:
+      context: ./backend
+    network_mode: host
+    command: ["serve", "-listen", "127.0.0.1:${VARDE_PORT:-8080}"]
+    restart: unless-stopped
+    stop_grace_period: 15s
+    read_only: true
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - varde-data:/data
+    logging:
+      driver: local
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  varde-data:
