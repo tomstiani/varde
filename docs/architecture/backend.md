@@ -201,6 +201,10 @@ Before a production slice is complete, demonstrate:
 
 Use deterministic clocks and fault injection alongside real temporary SQLite databases. Provider integration tests require separate request/spending approval; ordinary tests must not make live calls.
 
+## Implemented worker recovery
+
+The plain-text fallback worker retries known SQLite `BUSY` contention with capped jittered backoff and no attempt limit. Fatal or uncertain-cleanup failures still stop the backend. This storage-recovery policy is separate from the bounded paid-step retry policy above; it does not implement paid execution. The HTTP adapter owns a five-second request budget, while the application writes bounded best-effort stderr diagnostics. See the [worker recovery contract](../specs/backend-worker-recovery.md) and [operator guide](../how-to/run-backend.md). Migration execution policy, backup/restore and production packaging remain deferred.
+
 ## Evidence, alternatives, and deferred choices
 
 The [FOSS lifecycle comparison](../research/foss-alert-lifecycle-efe0c387-2704-4893-9ca3-71cfde044a47.md) found that ntfy and Gotify offer delivery infrastructure, while DBOS offers durable execution. None supplies the agreed Varde lifecycle in full. SQLite-owned work records avoid an extra deployment dependency while the workflow remains small. Revisit this choice if real implementation complexity warrants it.

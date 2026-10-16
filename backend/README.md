@@ -1,6 +1,6 @@
 # Varde backend
 
-Go + standard `net/http` + SQLite. The implemented slices support authenticated plain-text submission, retained originals, duplicate recovery, restart-safe text fallback, and snapshot-paginated history reads.
+Go + standard `net/http` + SQLite. The implemented slices support authenticated plain-text submission, retained originals, duplicate recovery, restart-safe text fallback, and snapshot-paginated history reads. The fallback worker recovers from temporary SQLite contention without restarting the backend; HTTP requests remain bounded and diagnostics cannot block processing.
 
 From this directory:
 
@@ -18,10 +18,12 @@ See [local setup and HTTP reference](../docs/how-to/run-backend.md) for prerequi
 
 - `cmd/varde/`: minimal backend entry point.
 - `cmd/varde-demo/`: minimal local verification entry point.
-- `internal/app/`: complete command grammar validation before opening SQLite, followed by operator dispatch, startup, and shutdown.
+- `internal/app/`: complete command grammar validation before opening SQLite, followed by operator dispatch, startup, shutdown, and bounded diagnostic output.
 - `internal/lifecycle/`: alert acceptance, credentials, validation and safe rule explanations, SQLite transactions, and fallback processing. `schema.sql` is embedded in the executable.
-- `internal/httpapi/`: routing and HTTP-only request/response translation.
+- `internal/httpapi/`: routing, request deadlines, and HTTP-only request/response translation.
 - `internal/demo/`: temporary-process and HTTP verification used by the demo.
+
+The [worker recovery contract](../docs/specs/backend-worker-recovery.md) records retry classification, timing, shutdown and diagnostic guarantees, with tests at the lifecycle, executable HTTP and application-output interfaces.
 
 Within a package, files follow responsibilities such as `submit.go`, `credentials.go`, and `timestamp.go`; related helpers stay beside the operation they support. See the [coding standards](../CODING_STANDARDS.md).
 

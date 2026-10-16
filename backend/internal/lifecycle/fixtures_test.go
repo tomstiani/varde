@@ -50,7 +50,7 @@ func runWorker(t *testing.T, store *Lifecycle) {
 	t.Helper()
 	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan error, 1)
-	go func() { done <- store.Run(ctx) }()
+	go func() { done <- store.Run(ctx, nil) }()
 	t.Cleanup(func() {
 		cancel()
 		select {

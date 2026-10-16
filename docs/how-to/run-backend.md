@@ -82,7 +82,11 @@ The process emits one readiness record to standard output, for example:
 {"event":"listening","address":"127.0.0.1:8080"}
 ```
 
-Keep one backend process per database. Local credential commands can run while it serves requests. Stop the backend with Ctrl-C or SIGTERM; it stops the worker and allows up to five seconds for HTTP shutdown.
+Keep one backend process per database. Local credential commands can run while it serves requests. Stop the backend with Ctrl-C or SIGTERM; it cancels worker backoff without draining pending work and allows up to five seconds for HTTP shutdown.
+
+Temporary SQLite writer contention no longer stops the worker or HTTP process. The worker retries with jittered exponential backoff, using nominal delays from one to 30 seconds without an attempt limit. The first successful worker transaction ends recovery and resets the delay, even if a backlog remains. Non-retryable worker storage failures, including disk-full, corruption and permission failures, still stop the backend. Inspect the safe diagnostics, correct the cause, then restart it; accepted work remains retained with intact storage.
+
+HTTP requests may return `503` during contention; uninterrupted reads under a writer lock are not promised. Requests have a five-second processing/response budget after headers, including body reads and database-connection queueing. Existing outer network deadlines remain in place. A cancelled database call can need brief cleanup after the response deadline. Sender and operator calls do not acquire hidden application-level retries; resubmit the same sender event ID after an uncertain result.
 
 HTTP bearer credentials are appropriate here only because the executable binds to loopback for development. Any later non-loopback deployment must provide an operator-controlled HTTPS path. A tunnel or network-access product does not replace credential authentication.
 
@@ -136,15 +140,17 @@ Errors contain a safe `error` category and `message`, plus a known `field` where
 | `413` | Body over 65,536 bytes |
 | `415` | Unsupported content type, charset, or compression |
 | `422` | Invalid schema fields or typed data not yet supported |
-| `503` | Capacity reached or storage unavailable; retry using the same event ID |
+| `503` | Capacity reached, storage unavailable, or request timed out; retry using the same event ID |
 
 A `503` includes `Retry-After: 5`; this is not a guarantee that capacity or storage will recover in five seconds. Never interpret a timeout or missing response as proof that acceptance did not commit. Reuse the same sender event ID on retry.
 
-The executable emits no access log or raw HTTP panic trace. Its readiness record contains only event/address metadata; command failures use sanitized categories. Do not enable a proxy or debugger that records authorization headers or request bodies.
+The executable emits no access log or raw HTTP panic trace. Stdout contains command results or the single readiness record. Recovery events go to stderr: `worker_recovery_started`, `worker_recovery_waiting`, `worker_recovery_succeeded`, and fatal `worker_stopped`. Progress events occur at most once per minute during each recovery period; entry and exit events are separate. Events contain only stage, safe category, retry count and elapsed milliseconds. They describe the worker, not whole-backend health.
+
+Diagnostics are bounded and best-effort: a stalled or failed stderr sink cannot block processing or shutdown, and events may be dropped. Final command failures retain a best-effort sanitized text message; a full stderr pipe cannot prevent failure exit. Do not enable a proxy or debugger that records authorization headers or request bodies. See the [worker recovery contract](../specs/backend-worker-recovery.md) for retry classification, output and verification details.
 
 ## Storage handling
 
-New data directories use mode `0700`; new database files use `0600`. Existing database files readable by other users are rejected. Existing directory permissions are not automatically changed: the operator must keep the containing directory private. SQLite uses WAL journaling, `synchronous=FULL`, foreign keys, and a five-second lock wait.
+New data directories use mode `0700`; new database files use `0600`. Existing database files readable by other users are rejected. Existing directory permissions are not automatically changed: the operator must keep the containing directory private. SQLite uses WAL journaling, `synchronous=FULL`, foreign keys, and a one-second lock wait.
 
 The new binary transactionally upgrades version-one stores for history ordering and durable cursor metadata. Stop older backend processes before upgrading, and do not use old binaries to write upgraded stores. Migration preserves originals, credentials, pending work and change records. Failure rolls back the upgrade rather than starting with partial schema changes. Take a consistent backup before upgrading important data.
 

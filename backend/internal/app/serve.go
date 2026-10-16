@@ -15,7 +15,7 @@ import (
 	"github.com/tomstiani/varde/backend/internal/lifecycle"
 )
 
-func serve(ctx context.Context, store *lifecycle.Lifecycle, address string, out io.Writer) error {
+func serve(ctx context.Context, store *lifecycle.Lifecycle, address string, out, diagnostics io.Writer) error {
 	host, _, err := net.SplitHostPort(address)
 	if err != nil || net.ParseIP(host) == nil || !net.ParseIP(host).IsLoopback() {
 		return errors.New("loopback_required")
@@ -41,16 +41,17 @@ func serve(ctx context.Context, store *lifecycle.Lifecycle, address string, out 
 		MaxHeaderBytes:    16384,
 		ErrorLog:          log.New(io.Discard, "", 0),
 	}
-	return runServer(ctx, store, server, listener)
+	return runServer(ctx, store, server, listener, diagnostics)
 }
 
-func runServer(ctx context.Context, store *lifecycle.Lifecycle, server *http.Server, listener net.Listener) error {
+func runServer(ctx context.Context, store *lifecycle.Lifecycle, server *http.Server, listener net.Listener, diagnostics io.Writer) error {
+	events, finishDiagnostics := workerDiagnostics(diagnostics)
 	workerCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	finished := make(chan error, 2)
 	var workers sync.WaitGroup
 	workers.Add(2)
-	go func() { defer workers.Done(); finished <- store.Run(workerCtx) }()
+	go func() { defer workers.Done(); finished <- store.Run(workerCtx, events) }()
 	go func() { defer workers.Done(); finished <- server.Serve(listener) }()
 
 	var result error
@@ -68,6 +69,7 @@ func runServer(ctx context.Context, store *lifecycle.Lifecycle, server *http.Ser
 		}
 	}
 	workers.Wait()
+	finishDiagnostics(shutdown)
 	if result == nil || errors.Is(result, context.Canceled) || errors.Is(result, http.ErrServerClosed) {
 		return nil
 	}

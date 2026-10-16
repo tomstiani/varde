@@ -21,7 +21,7 @@ func TestServerReadinessAndShutdown(t *testing.T) {
 	defer r.Close()
 	done := make(chan error, 1)
 	go func() {
-		done <- Run(ctx, []string{"-db", filepath.Join(t.TempDir(), "server.sqlite"), "serve", "-listen", "127.0.0.1:0"}, w)
+		done <- Run(ctx, []string{"-db", filepath.Join(t.TempDir(), "server.sqlite"), "serve", "-listen", "127.0.0.1:0"}, w, io.Discard)
 		_ = w.Close()
 	}()
 	ready := make(chan string, 1)
@@ -60,7 +60,7 @@ func TestServerReadinessAndShutdown(t *testing.T) {
 		t.Fatal("shutdown timed out")
 	}
 	var out bytes.Buffer
-	err := Run(context.Background(), []string{"-db", filepath.Join(t.TempDir(), "external.sqlite"), "serve", "-listen", "0.0.0.0:8080"}, &out)
+	err := Run(context.Background(), []string{"-db", filepath.Join(t.TempDir(), "external.sqlite"), "serve", "-listen", "0.0.0.0:8080"}, &out, io.Discard)
 	if err == nil || err.Error() != "loopback_required" {
 		t.Fatal("non-loopback bind permitted")
 	}
@@ -72,7 +72,7 @@ func TestOperatorCredentialCommands(t *testing.T) {
 	invoke := func(args ...string) string {
 		t.Helper()
 		var out bytes.Buffer
-		if err := Run(ctx, append([]string{"-db", path}, args...), &out); err != nil {
+		if err := Run(ctx, append([]string{"-db", path}, args...), &out, io.Discard); err != nil {
 			t.Fatal(err)
 		}
 		return out.String()
@@ -100,7 +100,7 @@ func TestOperatorCredentialCommands(t *testing.T) {
 		t.Fatal("revocation not persisted")
 	}
 	var out bytes.Buffer
-	err = Run(ctx, []string{"-db", path, "-PRIVATE-CREDENTIAL"}, &out)
+	err = Run(ctx, []string{"-db", path, "-PRIVATE-CREDENTIAL"}, &out, io.Discard)
 	if err == nil || strings.Contains(err.Error(), "PRIVATE-CREDENTIAL") || out.Len() != 0 {
 		t.Fatal("argument error leaked input")
 	}

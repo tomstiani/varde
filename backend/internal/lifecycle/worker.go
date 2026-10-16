@@ -7,8 +7,13 @@ import (
 	"time"
 )
 
-// Run resumes retained work and completes it without contacting a model.
-func (s *Lifecycle) Run(ctx context.Context) error {
+// Run resumes retained work; event delivery never blocks. Keep events open until Run returns.
+func (s *Lifecycle) Run(ctx context.Context, events chan<- WorkerEvent) error {
+	var recovery workerRecovery
+	jitter := retryJitter
+	if s.retryJitter != nil {
+		jitter = s.retryJitter
+	}
 	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
 	for {
@@ -20,8 +25,16 @@ func (s *Lifecycle) Run(ctx context.Context) error {
 			if ctx.Err() != nil {
 				return ctx.Err()
 			}
+			if isStorageBusy(err) {
+				if err := waitForRetry(ctx, jitter(recovery.failed(events))); err != nil {
+					return err
+				}
+				continue
+			}
+			recovery.report(events, "worker_stopped", "storage_unavailable", recovery.failures)
 			return safe(err)
 		}
+		recovery.recovered(events)
 		if completed {
 			continue
 		}
@@ -52,6 +65,11 @@ func (s *Lifecycle) completeNext(ctx context.Context) (bool, error) {
 		}
 		if _, err = conn.ExecContext(ctx, "INSERT INTO changes(alert_id,revision) VALUES(?,1)", id); err != nil {
 			return err
+		}
+		if s.beforeWorkerCommit != nil {
+			if err := s.beforeWorkerCommit(conn); err != nil {
+				return err
+			}
 		}
 		completed = true
 		return nil

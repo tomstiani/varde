@@ -10,7 +10,7 @@ import (
 	"github.com/tomstiani/varde/backend/internal/lifecycle"
 )
 
-func Run(ctx context.Context, args []string, out io.Writer) error {
+func Run(ctx context.Context, args []string, out, diagnostics io.Writer) error {
 	command, err := parseCommand(args)
 	if err != nil {
 		return err
@@ -21,7 +21,7 @@ func Run(ctx context.Context, args []string, out io.Writer) error {
 	}
 	defer store.Close()
 	if command.kind == serveBackend {
-		return serve(ctx, store, command.address, out)
+		return serve(ctx, store, command.address, out, diagnostics)
 	}
 
 	result, err := runOperatorCommand(ctx, store, command)

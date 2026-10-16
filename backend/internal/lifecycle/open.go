@@ -67,7 +67,7 @@ func prepareDatabaseFile(path string) error {
 func databaseURL(path string) string {
 	u := url.URL{Scheme: "file", Path: path}
 	query := url.Values{}
-	for _, pragma := range []string{"busy_timeout(5000)", "foreign_keys(ON)", "journal_mode(WAL)", "synchronous(FULL)"} {
+	for _, pragma := range []string{"busy_timeout(1000)", "foreign_keys(ON)", "journal_mode(WAL)", "synchronous(FULL)"} {
 		query.Add("_pragma", pragma)
 	}
 	u.RawQuery = query.Encode()

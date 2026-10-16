@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -13,8 +12,8 @@ import (
 func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	if err := app.Run(ctx, os.Args[1:], os.Stdout); err != nil {
-		fmt.Fprintln(os.Stderr, "varde:", err)
+	if err := app.Run(ctx, os.Args[1:], os.Stdout, os.Stderr); err != nil {
+		app.ReportFailure(os.Stderr, err)
 		os.Exit(1)
 	}
 }

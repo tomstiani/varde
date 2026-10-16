@@ -4,6 +4,7 @@ import (
 	"errors"
 	"io"
 	"mime"
+	"net"
 	"net/http"
 	"strings"
 
@@ -23,6 +24,10 @@ func readJSONBody(w http.ResponseWriter, r *http.Request) ([]byte, error) {
 		var limit *http.MaxBytesError
 		if errors.As(err, &limit) {
 			return nil, &lifecycle.Failure{Category: "body_too_large"}
+		}
+		var timeout net.Error
+		if errors.As(err, &timeout) && timeout.Timeout() {
+			return nil, &lifecycle.Failure{Category: "storage_unavailable"}
 		}
 		return nil, &lifecycle.Failure{Category: "invalid_json"}
 	}
