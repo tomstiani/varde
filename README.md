@@ -2,9 +2,25 @@
 
 A self-hosted backend and native Android app for turning homelab alerts into more glanceable notifications and rich in-app views.
 
-The project is in architecture planning. This README describes the intended product, not a working backend or Android app. [Alert-view experiment findings](docs/research/alert-view-experiments.md) are retained as documentation; runnable experiments and prototypes are intentionally not committed.
+The first backend slice uses Go, standard `net/http`, and SQLite: authenticated plain-text submission, durable originals, duplicate recovery, and restart-safe text fallback. It is not the complete backend or Android experience. [Run and test the local backend](docs/how-to/run-backend.md).
+
+[Alert-view experiment findings](docs/research/alert-view-experiments.md) are retained as documentation; runnable experiments and prototypes are intentionally not committed.
 
 See the [backend architecture proposal](docs/architecture/backend.md) for the agreed contracts, proposed modules, failure handling, and deferred choices.
+
+## Repository layout
+
+This is a monorepo so backend and Android interface changes can be reviewed together. Each application keeps its own build system and dependencies.
+
+```text
+backend/   Go module: executable, lifecycle, HTTP adapter, tests, local demo
+android/   Native Android app (not implemented yet)
+docs/      Shared architecture, research, and operational documentation
+```
+
+Run Go commands from `backend/`; there is no root Go module or workspace. No shared runtime library or Android build scaffolding is introduced yet.
+
+See [coding standards](CODING_STANDARDS.md) for the human-readability and package-organization conventions.
 
 ## Why
 
@@ -37,4 +53,4 @@ Alerts should include an explicit priority or severity. Initially, the model use
 
 ## Not decided yet
 
-The agreed backend design uses one application and SQLite. The application framework, concrete push provider, production model configuration, notification timing, and detailed wire formats remain undecided. See the architecture proposal before choosing implementation details.
+The backend uses one Go application, standard `net/http`, and SQLite. Concrete push delivery, production model configuration, notification timing, typed-data/layout wire formats, and Android implementation details remain undecided. See the architecture proposal before extending the first slice.

@@ -2,7 +2,7 @@
 
 Varde will use one application and SQLite to accept alerts durably, generate validated rich views, and serve a native Android app. Push is a best-effort hint; authenticated reads and change sync are authoritative.
 
-**Status:** proposal based on the confirmed contract interview. Nothing in this document describes an implemented production backend. The contracts below are agreed; internal records, method names, and transaction designs are proposed. The application framework and concrete push provider remain undecided.
+**Status:** architecture baseline based on the confirmed contract interview. The contracts below are agreed; the complete backend is not implemented. [Issue #9](https://github.com/tomstiani/varde/issues/9) selects Go, standard `net/http`, and SQLite for the first slice; see [local backend setup](../how-to/run-backend.md) for what currently works. Internal records and interfaces beyond that slice remain proposed. The concrete push provider is undecided.
 
 ## Scope
 
@@ -209,11 +209,11 @@ The [retained experiment findings](../research/alert-view-experiments.md) suppor
 
 Deferred deliberately:
 
-- Application framework and HTTP interface details, including canonicalization/versioning and error representations.
+- HTTP interfaces beyond the Go/`net/http` plain-text first slice, including typed-data schemas, history, and sync.
 - Concrete push provider, notification payload privacy, and timing relative to generation.
 - Production model configuration, optional reasoning adoption, and promotion of the tested relevance prompt.
 - Transport deadlines, prepared-request/context limits, and shutdown/claim mechanics. These must be specified before implementing paid execution.
 - Exact sync/pagination shapes and Android cache policy beyond demand-driven history loading.
 - Schema migrations, backup commands, and deployment packaging details.
 
-These choices must preserve the confirmed contracts above. The next artifact is a narrow first-slice specification: authenticated acceptance, retained original reads, resumable validated presentation, and change recovery. Push and Android delivery then build on those guarantees.
+These choices must preserve the confirmed contracts above. The first implementation increment in issue #9 covers authenticated plain-text acceptance, retained original reads, and restart-safe no-model fallback. Typed data, resumable paid generation, history/change recovery, push, and Android remain later increments.

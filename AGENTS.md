@@ -1,3 +1,7 @@
+## Coding standards
+
+Before writing or restructuring code, read [CODING_STANDARDS.md](CODING_STANDARDS.md).
+
 ## Agent skills
 
 ### Issue tracker
