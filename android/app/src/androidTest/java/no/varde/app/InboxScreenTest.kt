@@ -54,14 +54,37 @@ class InboxScreenTest {
         compose.runOnIdle { assertEquals("My lab", settings.connection?.name) }
     }
 
+    @Test fun emptyOriginalSummaryIsNotReplacedWithInventedContent() {
+        val backend = ScreenBackend(summary = "")
+        val inbox = Inbox(scope, ScreenSettings(Connection.create("My lab", "https://example.com", "token")), backend)
+        compose.setContent { VardeApp(inbox) }
+        compose.waitUntil { compose.onAllNodesWithText("Disk pressure").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithText("Disk pressure").performClick()
+        compose.waitUntil { compose.onAllNodesWithText("Summary").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithText("Summary").assertIsDisplayed()
+        compose.onNodeWithText("No summary supplied.").assertDoesNotExist()
+    }
+
+    @Test fun failedInitialLoadIsNotAnEmptyInbox() {
+        val backend = object : Backend {
+            override suspend fun history(connection: Connection): List<AlertRow> = throw InboxFailure(Problem.NETWORK)
+            override suspend fun read(connection: Connection, id: String): AlertDetail = throw InboxFailure(Problem.NETWORK)
+        }
+        val inbox = Inbox(scope, ScreenSettings(Connection.create("My lab", "https://example.com", "token")), backend)
+        compose.setContent { VardeApp(inbox) }
+        compose.waitUntil { compose.onAllNodesWithText("My lab: ${Problem.NETWORK.explanation}").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithText("No alerts yet.").assertDoesNotExist()
+        compose.onNodeWithText("Connection settings").assertIsDisplayed()
+    }
+
     private class ScreenSettings(var connection: Connection?) : ConnectionSettings {
         override suspend fun load() = connection
         override suspend fun save(connection: Connection) { this.connection = connection }
     }
-    private class ScreenBackend : Backend {
+    private class ScreenBackend(val summary: String = "Complete original summary") : Backend {
         @Volatile var calls = 0
         private val row = AlertRow("one", "2026-01-01T12:00:00Z", "Disk pressure", "high", "2026-01-01T12:00:00Z", Presentation("fallback", 1))
         override suspend fun history(connection: Connection): List<AlertRow> { calls++; return listOf(row) }
-        override suspend fun read(connection: Connection, id: String) = AlertDetail(row, "Complete original summary")
+        override suspend fun read(connection: Connection, id: String) = AlertDetail(row, summary)
     }
 }
