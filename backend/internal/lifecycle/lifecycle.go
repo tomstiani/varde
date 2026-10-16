@@ -9,6 +9,7 @@ import (
 
 type Lifecycle struct {
 	db                 *sql.DB
+	now                func() time.Time
 	beforeAcceptCommit func(*sql.Conn) error
 	afterAcceptCommit  func()
 }

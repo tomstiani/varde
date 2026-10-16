@@ -81,11 +81,15 @@ func (s *Lifecycle) initializeSchema(ctx context.Context) error {
 			return err
 		}
 		switch version {
-		case 1:
+		case 2:
 			return nil
+		case 1:
+			return migrateHistory(ctx, conn)
 		case 0:
-			_, err := conn.ExecContext(ctx, schema)
-			return err
+			if _, err := conn.ExecContext(ctx, schema); err != nil {
+				return err
+			}
+			return migrateHistory(ctx, conn)
 		default:
 			return failure("unsupported_database_version")
 		}

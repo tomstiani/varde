@@ -2,7 +2,7 @@
 
 A self-hosted backend and native Android app for turning homelab alerts into more glanceable notifications and rich in-app views.
 
-The first backend slice uses Go, standard `net/http`, and SQLite: authenticated plain-text submission, durable originals, duplicate recovery, and restart-safe text fallback. It is not the complete backend or Android experience. [Run and test the local backend](docs/how-to/run-backend.md).
+The backend uses Go, standard `net/http`, and SQLite: authenticated plain-text submission, durable originals, duplicate recovery, restart-safe text fallback, and bounded history reads. The first native Android slice reads one named connection with manual refresh and plain-text details. This is not the complete notification or rich-view experience. [Run the backend](docs/how-to/run-backend.md) or [build the Android app](android/README.md).
 
 [Alert-view experiment findings](docs/research/alert-view-experiments.md) are retained as documentation; runnable experiments and prototypes are intentionally not committed.
 
@@ -14,7 +14,7 @@ This is a monorepo so backend and Android interface changes can be reviewed toge
 
 ```text
 backend/   Go module: executable, lifecycle, HTTP adapter, tests, local demo
-android/   Native Android app (not implemented yet)
+android/   Native Kotlin/Compose app: single-connection plain-text inbox
 docs/      Shared architecture, research, and operational documentation
 ```
 
@@ -53,4 +53,4 @@ Alerts should include an explicit priority or severity. Initially, the model use
 
 ## Not decided yet
 
-The backend uses one Go application, standard `net/http`, and SQLite. Concrete push delivery, production model configuration, notification timing, typed-data/layout wire formats, and Android implementation details remain undecided. See the architecture proposal before extending the first slice.
+The backend uses one Go application, standard `net/http`, and SQLite; Android uses Kotlin and Jetpack Compose. Concrete push delivery, production model configuration, notification timing, and typed-data/layout wire formats remain undecided. Multiple connections and Android pagination are specified but not implemented in the first Android slice. See the architecture proposal and [approved inbox specification](docs/specs/android-combined-inbox.md) before extending it.

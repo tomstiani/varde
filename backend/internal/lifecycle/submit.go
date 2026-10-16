@@ -29,7 +29,11 @@ func (s *Lifecycle) Submit(ctx context.Context, token string, body []byte) (Aler
 			result = existing
 			return err
 		}
-		result, err = insertPendingAlert(ctx, conn, owner, original, canonical)
+		now := time.Now()
+		if s.now != nil {
+			now = s.now()
+		}
+		result, err = insertPendingAlert(ctx, conn, owner, original, canonical, now)
 		if err != nil {
 			return err
 		}
@@ -70,7 +74,7 @@ func findDuplicate(ctx context.Context, conn *sql.Conn, owner, eventID string, c
 	return alert, true, err
 }
 
-func insertPendingAlert(ctx context.Context, conn *sql.Conn, owner string, original Original, canonical []byte) (Alert, error) {
+func insertPendingAlert(ctx context.Context, conn *sql.Conn, owner string, original Original, canonical []byte, now time.Time) (Alert, error) {
 	var count int
 	if err := conn.QueryRowContext(ctx, "SELECT COUNT(*) FROM work WHERE finished=0").Scan(&count); err != nil {
 		return Alert{}, err
@@ -81,13 +85,13 @@ func insertPendingAlert(ctx context.Context, conn *sql.Conn, owner string, origi
 
 	alert := Alert{
 		ID:           randomID("alert_"),
-		AcceptedAt:   time.Now().UTC().Format(time.RFC3339Nano),
+		AcceptedAt:   now.UTC().Format(time.RFC3339Nano),
 		Original:     original,
 		Presentation: Presentation{State: "pending", Revision: 0},
 	}
 	_, err := conn.ExecContext(ctx,
-		"INSERT INTO alerts(id,sender_id,event_id,accepted_at,original) VALUES(?,?,?,?,?)",
-		alert.ID, owner, original.EventID, alert.AcceptedAt, canonical,
+		"INSERT INTO alerts(id,sender_id,event_id,accepted_at,original,accepted_seconds,accepted_nanos) VALUES(?,?,?,?,?,?,?)",
+		alert.ID, owner, original.EventID, alert.AcceptedAt, canonical, now.Unix(), now.Nanosecond(),
 	)
 	if err != nil {
 		return Alert{}, err

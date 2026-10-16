@@ -15,6 +15,8 @@ var errorStatuses = map[string]int{
 	"body_too_large":      http.StatusRequestEntityTooLarge,
 	"unsupported_media":   http.StatusUnsupportedMediaType,
 	"invalid_json":        http.StatusBadRequest,
+	"invalid_arguments":   http.StatusBadRequest,
+	"invalid_cursor":      http.StatusBadRequest,
 	"invalid_field":       http.StatusUnprocessableEntity,
 	"backlog_full":        http.StatusServiceUnavailable,
 	"storage_unavailable": http.StatusServiceUnavailable,

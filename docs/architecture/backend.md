@@ -209,11 +209,11 @@ The [retained experiment findings](../research/alert-view-experiments.md) suppor
 
 Deferred deliberately:
 
-- HTTP interfaces beyond the Go/`net/http` plain-text first slice, including typed-data schemas, history, and sync.
+- HTTP interfaces beyond the implemented plain-text and snapshot-history slices, including typed-data schemas and sync.
 - Concrete push provider, notification payload privacy, and timing relative to generation.
 - Production model configuration, optional reasoning adoption, and promotion of the tested relevance prompt.
 - Transport deadlines, prepared-request/context limits, and shutdown/claim mechanics. These must be specified before implementing paid execution.
-- Exact sync/pagination shapes and Android cache policy beyond demand-driven history loading.
+- Exact change-sync shapes; snapshot history and the first Android slice's memory-only content policy are specified separately.
 - Schema migrations, backup commands, and deployment packaging details.
 
-These choices must preserve the confirmed contracts above. The first implementation increment in issue #9 covers authenticated plain-text acceptance, retained original reads, and restart-safe no-model fallback. Typed data, resumable paid generation, history/change recovery, push, and Android remain later increments.
+These choices must preserve the confirmed contracts above. The first implementation increment in issue #9 covers authenticated plain-text acceptance, retained original reads, and restart-safe no-model fallback. Issue #12 adds authenticated snapshot history reads and the first single-connection Kotlin/Compose inbox. Canonical per-backend history retains acceptance-sequence order; the explicit `acceptedAt` history view supports Android's timestamp-ordered feed without rewriting timestamps when clocks move backwards. See the [history contract](../how-to/read-history.md) and [approved inbox specification](../specs/android-combined-inbox.md). Typed data, resumable paid generation, change recovery, push, and the remaining multi-connection Android slices are still later increments.

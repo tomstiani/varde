@@ -18,6 +18,10 @@ func (e *Failure) Error() string { return e.Category }
 // Message describes the rule, never the rejected value; Error remains the stable diagnostic category.
 func (e *Failure) Message() string {
 	switch e.Category {
+	case "invalid_arguments":
+		return "Supply valid, non-repeated history parameters."
+	case "invalid_cursor":
+		return "The history cursor is invalid for this request; refresh history."
 	case "unauthorized":
 		return "A valid bearer credential is required."
 	case "forbidden":
