@@ -1,3 +1,5 @@
+import org.gradle.api.tasks.testing.Test
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -46,4 +48,22 @@ dependencies {
     androidTestImplementation("androidx.compose.ui:ui-test-junit4:1.9.0")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
     debugImplementation("androidx.compose.ui:ui-test-manifest:1.9.0")
+}
+
+tasks.withType<Test>().configureEach {
+    if (name == "testDebugUnitTest" || name == "testReleaseUnitTest") exclude("**/GoHistoryTest*")
+}
+
+tasks.register<Test>("goHistoryTest") {
+    description = "Verify Android snapshot browsing against an actual temporary Go/SQLite backend."
+    group = "verification"
+    val unitTests = tasks.named<Test>("testDebugUnitTest")
+    dependsOn(unitTests)
+    testClassesDirs = unitTests.get().testClassesDirs
+    classpath = unitTests.get().classpath
+    include("**/GoHistoryTest.class")
+    systemProperty("varde.backend.dir", rootProject.file("../backend").canonicalPath)
+    inputs.files(fileTree(rootProject.file("../backend")) {
+        include("**/*.go", "**/*.sql", "go.mod", "go.sum")
+    })
 }

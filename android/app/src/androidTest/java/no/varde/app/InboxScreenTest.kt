@@ -179,6 +179,39 @@ class InboxScreenTest {
         compose.onNodeWithText("Connections").assertIsDisplayed()
     }
 
+    @Test fun loadsOlderWithoutRefreshingOnDetailReturnAndRefreshReturnsToNewest() {
+        val connection = Connection.create("Home", "https://example.com", "token")
+        var freshLoads = 0
+        val backend = object : Backend {
+            fun row(number: Int) = AlertRow("$number", java.time.Instant.ofEpochSecond(number.toLong()).toString(), "Alert $number", "normal", "2026-01-01T12:00:00Z", Presentation("fallback", 1))
+            override suspend fun history(connection: Connection, cursor: String?): HistoryPage {
+                if (cursor != null) return HistoryPage((50 downTo 1).map(::row))
+                freshLoads++
+                return if (freshLoads == 1) HistoryPage((100 downTo 51).map(::row), "older") else HistoryPage(listOf(row(200)))
+            }
+            override suspend fun read(connection: Connection, id: String) = AlertDetail(row(id.toInt()), "Original $id")
+        }
+        val inbox = Inbox(scope, ScreenSettings(listOf(connection)), backend)
+        compose.setContent { VardeApp(inbox) }
+        waitFor("Alert 100")
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText("Load older"))
+        compose.onNodeWithText("Load older").performClick()
+        compose.waitUntil { inbox.state.value.items.size == 100 }
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText("All alerts in this snapshot are loaded."))
+        compose.onNodeWithText("Load older").assertDoesNotExist()
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText("Alert 25"))
+        compose.onNodeWithText("Alert 25").performClick()
+        waitFor("Original 25")
+        compose.onNodeWithText("Home").assertIsDisplayed()
+        compose.onNodeWithText("Back to inbox").performClick()
+        compose.onNodeWithText("Alert 25").assertIsDisplayed()
+        compose.runOnIdle { assertEquals(1, freshLoads) }
+        compose.onNodeWithText("Refresh").performClick()
+        waitFor("Alert 200")
+        compose.onNodeWithText("Alert 200").assertIsDisplayed()
+        compose.runOnIdle { assertEquals(2, freshLoads) }
+    }
+
     private fun waitFor(text: String) {
         compose.waitUntil(timeoutMillis = 5_000) { compose.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty() }
     }

@@ -20,7 +20,7 @@ fun VardeApp(inbox: Inbox) {
         Surface(modifier = androidx.compose.ui.Modifier.fillMaxSize()) {
             NavHost(navigation, startDestination = "inbox") {
                 composable("inbox") {
-                    InboxScreen(state, inbox::refresh,
+                    InboxScreen(state, inbox::refresh, inbox::loadOlder,
                         onSettings = { navigation.navigate("settings") },
                         onAdd = addConnection,
                         onAlert = { key ->

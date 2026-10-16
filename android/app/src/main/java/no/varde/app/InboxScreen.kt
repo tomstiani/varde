@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -17,13 +18,26 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import no.varde.app.inbox.AlertKey
 import no.varde.app.inbox.InboxState
 
 @Composable
-fun InboxScreen(state: InboxState, onRefresh: () -> Unit, onSettings: () -> Unit, onAdd: () -> Unit, onAlert: (AlertKey) -> Unit) {
+fun InboxScreen(state: InboxState, onRefresh: () -> Unit, onLoadOlder: () -> Unit, onSettings: () -> Unit, onAdd: () -> Unit, onAlert: (AlertKey) -> Unit) {
+    val listState = rememberLazyListState()
+    var lastRefresh by rememberSaveable { mutableIntStateOf(state.refreshRevision) }
+    LaunchedEffect(state.refreshRevision) {
+        if (lastRefresh != state.refreshRevision) {
+            listState.scrollToItem(0)
+            lastRefresh = state.refreshRevision
+        }
+    }
     Scaffold { padding ->
         Column(Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -41,7 +55,7 @@ fun InboxScreen(state: InboxState, onRefresh: () -> Unit, onSettings: () -> Unit
                     Button(onClick = onRefresh, enabled = !state.loading) { Text("Refresh") }
                     if (state.loading) CircularProgressIndicator()
                     if (!state.loading && state.problems.isEmpty() && state.items.isEmpty()) Text("No alerts yet.")
-                    LazyColumn(contentPadding = PaddingValues(vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    LazyColumn(state = listState, contentPadding = PaddingValues(vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         if (state.problems.isNotEmpty()) item(key = "incomplete") {
                             Column {
                                 Text("Results are incomplete. Refresh explicitly to retry unavailable connections.")
@@ -62,8 +76,13 @@ fun InboxScreen(state: InboxState, onRefresh: () -> Unit, onSettings: () -> Unit
                                 }
                             }
                         }
-                        if (state.items.isNotEmpty()) item {
-                            Text("Showing the newest loaded results. Older browsing comes in a later increment.")
+                        item(key = "pagination") {
+                            when {
+                                state.loadingOlder -> CircularProgressIndicator()
+                                state.hasMore -> Button(onClick = onLoadOlder, enabled = !state.loading) { Text("Load older") }
+                                !state.loading && state.historyComplete && state.items.isNotEmpty() -> Text("All alerts in this snapshot are loaded.")
+                                !state.loading && state.problems.isNotEmpty() -> Text("History is incomplete. Refresh to retry.")
+                            }
                         }
                     }
                 }

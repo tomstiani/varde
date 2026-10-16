@@ -19,6 +19,7 @@ class Inbox(
     val state = mutableState.asStateFlow()
     private var historyJob: Job? = null
     private var detailJob: Job? = null
+    private var historySession: HistorySession? = null
     private var historyRevision = 0
     private var detailRevision = 0
 
@@ -64,6 +65,7 @@ class Inbox(
                 if (reload) {
                     historyRevision++
                     historyJob?.cancel()
+                    historySession = null
                     if (state.value.detail?.key?.connectionId == affectedId) {
                         detailRevision++
                         detailJob?.cancel()
@@ -76,6 +78,8 @@ class Inbox(
                         detail = if (reload && it.detail?.key?.connectionId == affectedId) null else it.detail,
                         problems = if (reload) it.problems - affectedId else it.problems,
                         staleConnections = if (reload) it.staleConnections - affectedId else it.staleConnections,
+                        loading = if (reload) false else it.loading,
+                        loadingOlder = if (reload) false else it.loadingOlder,
                         saving = false,
                     )
                 }
@@ -88,22 +92,52 @@ class Inbox(
     }
 
     fun refresh() {
+        if (state.value.loading) return
         historyJob?.cancel()
         val requestRevision = ++historyRevision
         val connections = state.value.connections
+        historySession = null
         if (connections.isEmpty()) {
-            mutableState.update { it.copy(loading = false, items = emptyList(), problems = emptyMap(), staleConnections = emptySet()) }
+            mutableState.update { it.copy(loading = false, loadingOlder = false, hasMore = false, historyComplete = false, items = emptyList(), problems = emptyMap(), staleConnections = emptySet()) }
             return
         }
-        mutableState.update { it.copy(loading = true) }
+        mutableState.update { it.copy(loading = true, loadingOlder = false) }
         historyJob = scope.launch {
-            val result = loadNewest(connections, backend)
+            val result = HistorySession.begin(connections).nextBatch(backend)
             if (historyRevision == requestRevision) {
+                historySession = result.session
                 mutableState.update {
                     val retained = it.items.filter { item -> item.key.connectionId in result.problems }
                     it.copy(
                         items = (result.items + retained).distinctBy { item -> item.key }.sortedWith(inboxOrdering),
                         loading = false,
+                        hasMore = result.session.hasMore,
+                        historyComplete = result.session.complete,
+                        refreshRevision = it.refreshRevision + 1,
+                        problems = result.problems,
+                        staleConnections = result.problems.keys,
+                    )
+                }
+            }
+        }
+    }
+
+    fun loadOlder() {
+        val current = state.value
+        val session = historySession ?: return
+        if (current.loading || current.loadingOlder || !current.hasMore) return
+        val requestRevision = ++historyRevision
+        mutableState.update { it.copy(loadingOlder = true) }
+        historyJob = scope.launch {
+            val result = session.nextBatch(backend)
+            if (historyRevision == requestRevision) {
+                historySession = result.session
+                mutableState.update {
+                    it.copy(
+                        items = (it.items + result.items).distinctBy { item -> item.key }.sortedWith(inboxOrdering),
+                        loadingOlder = false,
+                        hasMore = result.session.hasMore,
+                        historyComplete = result.session.complete,
                         problems = result.problems,
                         staleConnections = result.problems.keys,
                     )
