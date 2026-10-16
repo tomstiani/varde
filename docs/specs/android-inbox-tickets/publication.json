@@ -1,0 +1,45 @@
+[
+  {
+    "number": 12,
+    "title": "Read one backend\u2019s alerts on Android",
+    "url": "https://github.com/tomstiani/varde/issues/12",
+    "draft": "01-read-one-backend.md",
+    "blockedBy": []
+  },
+  {
+    "number": 13,
+    "title": "Combine and manage named connections",
+    "url": "https://github.com/tomstiani/varde/issues/13",
+    "draft": "02-combine-connections.md",
+    "blockedBy": [
+      12
+    ]
+  },
+  {
+    "number": 14,
+    "title": "Browse older alerts across connections",
+    "url": "https://github.com/tomstiani/varde/issues/14",
+    "draft": "03-browse-older.md",
+    "blockedBy": [
+      13
+    ]
+  },
+  {
+    "number": 15,
+    "title": "Keep the inbox useful during partial outages",
+    "url": "https://github.com/tomstiani/varde/issues/15",
+    "draft": "04-partial-outages.md",
+    "blockedBy": [
+      14
+    ]
+  },
+  {
+    "number": 16,
+    "title": "Verify the complete two-backend phone experience",
+    "url": "https://github.com/tomstiani/varde/issues/16",
+    "draft": "05-two-backend-acceptance.md",
+    "blockedBy": [
+      15
+    ]
+  }
+]

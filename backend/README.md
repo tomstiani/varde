@@ -1,6 +1,6 @@
 # Varde backend
 
-Go + standard `net/http` + SQLite. The first slice supports authenticated plain-text submission, retained originals, duplicate recovery, and restart-safe text fallback.
+Go + standard `net/http` + SQLite. The implemented slices support authenticated plain-text submission, retained originals, duplicate recovery, restart-safe text fallback, and snapshot-paginated history reads.
 
 From this directory:
 
@@ -25,4 +25,4 @@ See [local setup and HTTP reference](../docs/how-to/run-backend.md) for prerequi
 
 Within a package, files follow responsibilities such as `submit.go`, `credentials.go`, and `timestamp.go`; related helpers stay beside the operation they support. See the [coding standards](../CODING_STANDARDS.md).
 
-The Android app lives separately in [`android/`](../android/). This module does not build or package it.
+The named-connection Android inbox lives separately in [`android/`](../android/). This module does not build or package it. [History request and cursor contracts](../docs/how-to/read-history.md) support its timestamp-ordered history browsing. The Android `goHistoryTest` Gradle task verifies that transport/inbox path against an actual temporary Go/SQLite process.

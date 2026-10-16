@@ -15,6 +15,12 @@ _Avoid_: Pangolin (one possible network path, not the backend)
 **Android app**:
 The user's native Android client for receiving alert notifications and viewing their rich presentations.
 
+**Connection**:
+A named association between the Android app and a homelab backend. Each alert displayed in the app belongs to its source connection.
+
+**Inbox**:
+The combined list of alerts from the Android app's saved connections, with each alert labelled by its source connection.
+
 **Network path**:
 The user-selected means by which the app reaches the homelab backend, such as Pangolin, Tailscale, or the public internet.
 

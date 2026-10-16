@@ -2,7 +2,7 @@
 
 Build and test authenticated alert acceptance, original retrieval, duplicate recovery, and restart-safe text fallback. This implements the foundation in [issue #9](https://github.com/tomstiani/varde/issues/9), not the full Android release.
 
-**Current limits:** plain-text alerts only; no typed measurements, rich generation, paid model requests, push, Android, public history pagination, or change-sync requests. The executable accepts only literal loopback listen addresses. It is a development increment, not supported non-loopback deployment packaging.
+**Current limits:** plain-text alerts only; no typed measurements, rich generation, paid model requests, push, or change-sync requests. [Public history pagination](read-history.md) and a [named-connection Android inbox](../../android/README.md) are implemented, including older-history browsing and explicit partial-outage recovery. Physical-phone and two-backend real-network acceptance remain outstanding. The executable accepts only literal loopback listen addresses. It is a development increment, not supported non-loopback deployment packaging.
 
 ## Prerequisites
 
@@ -116,7 +116,7 @@ Reject unknown fields, duplicate JSON object keys, invalid encoding, and incorre
 
 A new alert returns `201`. The response contains `id`, `acceptedAt`, `original`, and `presentation`. Presentation initially has `state: "pending"` and `revision: 0`; the worker completes it as `state: "fallback"` and `revision: 1`. The fallback reason is stored internally as `model_not_configured`, not exposed as a private diagnostic record to installations.
 
-`GET /v1/alerts/{alertId}` requires an **installation** bearer credential. It returns the same representation and remains usable while processing is pending. An installation reads all alerts in this homelab; a sender cannot read them. This increment has no push destination management.
+`GET /v1/alerts/{alertId}` requires an **installation** bearer credential. It returns the same representation and remains usable while processing is pending. An installation reads all alerts in this homelab; a sender cannot read them. This increment has no push destination management. Installations can also [page history summaries](read-history.md); full originals remain loaded on demand.
 
 Identical submissions under the same sender/event identity return `200` and the existing ID. Changed content returns `409`, even when capacity is full. Formatting and object-key ordering do not affect comparison; omitted `data` equals `[]`. Revoking or replacing credentials does not reset the sender's event-ID history.
 
@@ -145,5 +145,7 @@ The executable emits no access log or raw HTTP panic trace. Its readiness record
 ## Storage handling
 
 New data directories use mode `0700`; new database files use `0600`. Existing database files readable by other users are rejected. Existing directory permissions are not automatically changed: the operator must keep the containing directory private. SQLite uses WAL journaling, `synchronous=FULL`, foreign keys, and a five-second lock wait.
+
+The new binary transactionally upgrades version-one stores for history ordering and durable cursor metadata. Stop older backend processes before upgrading, and do not use old binaries to write upgraded stores. Migration preserves originals, credentials, pending work and change records. Failure rolls back the upgrade rather than starting with partial schema changes. Take a consistent backup before upgrading important data.
 
 Do not copy a live `.sqlite` file alone: committed records can still reside in its WAL. Supported backup/restore commands and sync-cursor invalidation are later work; this development increment is not an archival backup procedure. The acceptance guarantee assumes intact storage and working filesystem durability semantics.

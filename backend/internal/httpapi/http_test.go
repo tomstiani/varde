@@ -59,6 +59,14 @@ func TestHTTPSubmissionAndOriginalRead(t *testing.T) {
 	if w.Code != 200 || !bytes.Contains(w.Body.Bytes(), []byte("PRIVATE-TITLE")) {
 		t.Fatalf("read: %d %s", w.Code, w.Body.String())
 	}
+	w = request("GET", "/v1/alerts?order=acceptedAt", device.Secret, "")
+	var history lifecycle.HistoryPage
+	if err := json.Unmarshal(w.Body.Bytes(), &history); err != nil || w.Code != 200 || len(history.Items) != 1 || history.Items[0].ID != a.ID {
+		t.Fatalf("history: %d %s", w.Code, w.Body.String())
+	}
+	if strings.Contains(w.Body.String(), "PRIVATE-BODY") || strings.Contains(w.Body.String(), `"original"`) {
+		t.Fatal("history returned full original content")
+	}
 	w = request("POST", "/v1/alerts", sender.Secret, payload)
 	if w.Code != 200 {
 		t.Fatalf("duplicate: %d", w.Code)
@@ -70,6 +78,8 @@ func TestHTTPSubmissionAndOriginalRead(t *testing.T) {
 		{"missing", "POST", "/v1/alerts", "", payload, 401},
 		{"invalid", "GET", "/v1/alerts/" + a.ID, strings.Repeat("a", 43), "", 401},
 		{"sender read", "GET", "/v1/alerts/" + a.ID, sender.Secret, "", 403},
+		{"sender history", "GET", "/v1/alerts", sender.Secret, "", 403},
+		{"unauthenticated history", "GET", "/v1/alerts", "", "", 401},
 		{"device submit", "POST", "/v1/alerts", device.Secret, payload, 403},
 		{"missing alert", "GET", "/v1/alerts/unknown", device.Secret, "", 404},
 		{"conflict", "POST", "/v1/alerts", sender.Secret, strings.Replace(payload, "PRIVATE-TITLE", "changed", 1), 409},
