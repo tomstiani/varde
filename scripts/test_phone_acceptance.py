@@ -58,7 +58,7 @@ class PhoneAcceptanceSafetyTest(unittest.TestCase):
             [{"name": "Mac A", "url": "https://user:synthetic-private-value@a.example.invalid/"}],
             [{"name": "Mac A", "url": "https://a.example.invalid/?secret=synthetic-private-value"}],
             [{"name": "Mac A", "url": "https://a.example.invalid/#synthetic-private-value"}],
-            [{"name": "Mac A", "url": "https://a.example.invalid:bad/"}],
+            [{"name": "Mac A", "url": "https://a.example.invalid:synthetic-private-value/"}],
             [{"name": "Mac A", "url": "http://192.168.1.1/"}],
             [{"name": "Mac A", "url": "https://a.example.invalid/ synthetic-private-value"}],
         ]
