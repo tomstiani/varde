@@ -22,6 +22,8 @@ internal class GoBackendFixture(private val backendDirectory: File) : Closeable 
     @Volatile lateinit var address: HttpUrl
         private set
     private lateinit var senderSecret: String
+    private lateinit var installationIdentity: String
+    private lateinit var installationCredential: String
     lateinit var installationSecret: String
         private set
 
@@ -55,9 +57,25 @@ internal class GoBackendFixture(private val backendDirectory: File) : Closeable 
         start()
     }
 
+    fun pause() = stop()
+
+    fun resume() { check(process == null); start() }
+
+    fun rotateInstallation() {
+        val replacement = JSONObject(operator("credential", "issue", installationIdentity))
+        operator("credential", "revoke", installationCredential)
+        installationCredential = replacement.getString("id")
+        installationSecret = replacement.getString("secret")
+    }
+
     private fun issue(role: String): String {
         val identity = JSONObject(operator("identity", "create", role, "test-$role")).getString("id")
-        return JSONObject(operator("credential", "issue", identity)).getString("secret")
+        val credential = JSONObject(operator("credential", "issue", identity))
+        if (role == "installation") {
+            installationIdentity = identity
+            installationCredential = credential.getString("id")
+        }
+        return credential.getString("secret")
     }
 
     private fun operator(vararg arguments: String) = command(listOf(executable.absolutePath, "-db", database.absolutePath) + arguments, 30)

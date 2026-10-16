@@ -2,7 +2,7 @@
 
 A self-hosted backend and native Android app for turning homelab alerts into more glanceable notifications and rich in-app views.
 
-The backend uses Go, standard `net/http`, and SQLite: authenticated plain-text submission, durable originals, duplicate recovery, restart-safe text fallback, and bounded history reads. The native Android app combines alert history from named connections with manual refresh, explicit older-history browsing, source labels, secure settings, plain-text details, and explicit recovery from partial outages. This is not the complete notification or rich-view experience. [Run the backend](docs/how-to/run-backend.md) or [build the Android app](android/README.md).
+The backend uses Go, standard `net/http`, and SQLite: authenticated plain-text submission, durable originals, duplicate recovery, restart-safe text fallback, and bounded history reads. The native Android app combines alert history from named connections with manual refresh, explicit older-history browsing, source labels, secure settings, plain-text details, and explicit recovery from partial outages. This is not the complete notification or rich-view experience. [Run the backend](docs/how-to/run-backend.md), [build the Android app](android/README.md), or [try two local backends on a phone over USB](docs/how-to/local-acceptance.md).
 
 [Alert-view experiment findings](docs/research/alert-view-experiments.md) are retained as documentation; runnable experiments and prototypes are intentionally not committed.
 
@@ -53,4 +53,4 @@ Alerts should include an explicit priority or severity. Initially, the model use
 
 ## Not decided yet
 
-The backend uses one Go application, standard `net/http`, and SQLite; Android uses Kotlin and Jetpack Compose. Concrete push delivery, production model configuration, notification timing, and typed-data/layout wire formats remain undecided. Named connections, older-history browsing, and explicit partial-outage recovery are implemented; two-backend real-network and physical-phone acceptance remain outstanding. See the architecture proposal and [approved inbox specification](docs/specs/android-combined-inbox.md) before extending it.
+The backend uses one Go application, standard `net/http`, and SQLite; Android uses Kotlin and Jetpack Compose. Concrete push delivery, production model configuration, notification timing, and typed-data/layout wire formats remain undecided. Named connections, older-history browsing, and explicit partial-outage recovery are implemented. Real two-backend transport tests and physical-phone USB setup/browsing are verified; original remote HTTPS/n8n acceptance remains deferred. See the architecture proposal and [approved inbox specification](docs/specs/android-combined-inbox.md) before extending it.

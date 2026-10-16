@@ -23,6 +23,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import no.varde.app.inbox.InboxState
+import no.varde.app.inbox.EndpointPolicy
 
 @Composable
 fun ConnectionScreen(state: InboxState, connectionId: String?, onBack: () -> Unit, onSave: (String, String, String) -> Unit, onRemove: () -> Unit) {
@@ -38,6 +39,7 @@ fun ConnectionScreen(state: InboxState, connectionId: String?, onBack: () -> Uni
             Text(if (connectionId == null) "New connection" else "Edit connection")
             Text("Use an installation credential issued by your backend's local operator command.")
             OutlinedTextField(name, { name = it }, label = { Text("Friendly name") }, singleLine = true, enabled = !state.saving)
+            EndpointPolicy.usbHint?.let { Text(it) }
             OutlinedTextField(url, { url = it }, label = { Text("HTTPS URL") }, singleLine = true, enabled = !state.saving,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, autoCorrectEnabled = false))
             OutlinedTextField(secret, { secret = it }, label = { Text("Installation credential") }, singleLine = true, enabled = !state.saving,

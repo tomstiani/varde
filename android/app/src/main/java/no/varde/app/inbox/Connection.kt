@@ -21,7 +21,7 @@ class Connection private constructor(
             val label = name.trim()
             val parsed = url.trim().toHttpUrlOrNull()
             if (label.isBlank() || label.codePointCount(0, label.length) > 80 ||
-                parsed == null || parsed.scheme != "https" || parsed.username.isNotEmpty() ||
+                parsed == null || !EndpointPolicy.allows(parsed) || parsed.username.isNotEmpty() ||
                 parsed.password.isNotEmpty() || parsed.query != null || parsed.fragment != null ||
                 secret.isEmpty() || secret.any { it.code !in 33..126 } || id.isBlank()
             ) throw InboxFailure(Problem.CONFIGURATION)

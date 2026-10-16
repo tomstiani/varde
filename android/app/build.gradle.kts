@@ -51,7 +51,7 @@ dependencies {
 }
 
 tasks.withType<Test>().configureEach {
-    if (name == "testDebugUnitTest" || name == "testReleaseUnitTest") exclude("**/GoHistoryTest*")
+    if (name == "testDebugUnitTest" || name == "testReleaseUnitTest") exclude("**/GoHistoryTest*", "**/GoTwoBackendTest*")
 }
 
 tasks.register<Test>("goHistoryTest") {
@@ -61,7 +61,7 @@ tasks.register<Test>("goHistoryTest") {
     dependsOn(unitTests)
     testClassesDirs = unitTests.get().testClassesDirs
     classpath = unitTests.get().classpath
-    include("**/GoHistoryTest.class")
+    include("**/GoHistoryTest.class", "**/GoTwoBackendTest.class")
     systemProperty("varde.backend.dir", rootProject.file("../backend").canonicalPath)
     inputs.files(fileTree(rootProject.file("../backend")) {
         include("**/*.go", "**/*.sql", "go.mod", "go.sum")
