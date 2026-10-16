@@ -28,9 +28,25 @@ func validTimestamp(value string) bool {
 	}
 	if leap {
 		utc := parsed.UTC()
-		if utc.Hour() != 23 || utc.Minute() != 59 || utc.Add(time.Second).Day() != 1 {
+		if utc.Hour() != 23 || utc.Minute() != 59 || !hasLeapSecond(utc) {
 			return false
 		}
 	}
 	return true
+}
+
+func hasLeapSecond(utc time.Time) bool {
+	// IERS insertion dates; future leap seconds require an announced date here.
+	switch utc.Format("2006-01-02") {
+	case "1972-06-30", "1972-12-31", "1973-12-31", "1974-12-31",
+		"1975-12-31", "1976-12-31", "1977-12-31", "1978-12-31",
+		"1979-12-31", "1981-06-30", "1982-06-30", "1983-06-30",
+		"1985-06-30", "1987-12-31", "1989-12-31", "1990-12-31",
+		"1992-06-30", "1993-06-30", "1994-06-30", "1995-12-31",
+		"1997-06-30", "1998-12-31", "2005-12-31", "2008-12-31",
+		"2012-06-30", "2015-06-30", "2016-12-31":
+		return true
+	default:
+		return false
+	}
 }

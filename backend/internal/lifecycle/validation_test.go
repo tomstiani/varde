@@ -10,7 +10,7 @@ import (
 
 func TestValidTimestampAndUnicodeValuesArePreserved(t *testing.T) {
 	f := setup(t)
-	for i, observed := range []string{"2026-01-01t12:00:00z", "2016-12-31T23:59:60Z", "2017-01-01T00:59:60+01:00", "2026-01-01T12:00:00.123456789123Z"} {
+	for i, observed := range []string{"2026-01-01t12:00:00z", "2016-12-31T23:59:60Z", "2017-01-01T00:59:60+01:00", "1972-06-30T23:59:60Z", "2015-06-30T19:59:60-04:00", "2026-01-01T12:00:00.123456789123Z"} {
 		body := strings.Replace(validAlert, "2026-01-01T14:00:00+02:00", observed, 1)
 		body = strings.Replace(body, "nas-1", fmt.Sprintf("timestamp-%d", i), 1)
 		body = strings.Replace(body, "Disk pressure", `\ud83d\ude00`, 1)
@@ -23,6 +23,26 @@ func TestValidTimestampAndUnicodeValuesArePreserved(t *testing.T) {
 		if err != nil || created || duplicate.ID != a.ID {
 			t.Fatal("Unicode spelling changed duplicate identity")
 		}
+	}
+}
+
+func TestSubmissionRejectsUnannouncedLeapSeconds(t *testing.T) {
+	for _, observed := range []string{
+		"2026-01-31T23:59:60Z",
+		"2016-06-30T23:59:60Z",
+		"1971-12-31T23:59:60Z",
+		"2017-01-31T19:59:60-04:00",
+		"2016-12-31T22:59:60Z",
+	} {
+		t.Run(observed, func(t *testing.T) {
+			f := setup(t)
+			body := strings.Replace(validAlert, "2026-01-01T14:00:00+02:00", observed, 1)
+			_, created, err := f.store.Submit(context.Background(), f.sender.Secret, []byte(body))
+			if created {
+				t.Fatal("invalid leap second accepted")
+			}
+			category(t, err, "invalid_field")
+		})
 	}
 }
 
