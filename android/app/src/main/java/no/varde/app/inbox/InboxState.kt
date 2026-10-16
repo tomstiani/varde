@@ -5,8 +5,10 @@ data class DetailState(
     val alert: AlertDetail? = null,
     val loading: Boolean = true,
     val problem: Problem? = null,
-    val stale: Boolean = false,
-)
+    val sourceProblem: Problem? = null,
+) {
+    val stale: Boolean get() = alert != null && (problem != null || sourceProblem != null)
+}
 
 data class InboxState(
     val initialized: Boolean = false,

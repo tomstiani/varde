@@ -10,6 +10,7 @@ import okhttp3.Response
 import org.json.JSONObject
 import java.io.IOException
 import java.util.concurrent.TimeUnit
+import javax.net.ssl.SSLException
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
@@ -27,7 +28,7 @@ class HttpBackend(client: OkHttpClient = OkHttpClient()) : Backend {
             .addQueryParameter("order", "acceptedAt")
             .addQueryParameter("limit", "50")
             .apply { cursor?.let { addQueryParameter("cursor", it) } }.build()
-        return request(connection, url) { json ->
+        return request(connection, url, history = true) { json ->
             val items = json.getJSONArray("items")
             require(items.length() <= 50)
             require(json.has("nextCursor") && (json.isNull("nextCursor") || json.get("nextCursor") is String))
@@ -45,7 +46,7 @@ class HttpBackend(client: OkHttpClient = OkHttpClient()) : Backend {
             AlertDetail(parseRow(json, original), original.text("summary"))
         }
 
-    private suspend fun <T> request(connection: Connection, url: HttpUrl, parse: (JSONObject) -> T): T =
+    private suspend fun <T> request(connection: Connection, url: HttpUrl, history: Boolean = false, parse: (JSONObject) -> T): T =
         suspendCancellableCoroutine { continuation ->
             val request = Request.Builder().url(url)
                 .header("Authorization", "Bearer ${connection.secret}")
@@ -55,13 +56,13 @@ class HttpBackend(client: OkHttpClient = OkHttpClient()) : Backend {
             continuation.invokeOnCancellation { call.cancel() }
             call.enqueue(object : Callback {
                 override fun onFailure(call: Call, e: IOException) {
-                    continuation.resumeWithException(InboxFailure(Problem.NETWORK))
+                    continuation.resumeWithException(transportFailure(e))
                 }
 
                 override fun onResponse(call: Call, response: Response) {
                     try {
                         val result = response.use {
-                            checkStatus(it.code)
+                            checkStatus(it, history)
                             val body = it.body ?: throw InboxFailure(Problem.RESPONSE)
                             val source = body.source()
                             if (source.request(524_289)) throw InboxFailure(Problem.RESPONSE)
@@ -70,8 +71,8 @@ class HttpBackend(client: OkHttpClient = OkHttpClient()) : Backend {
                         continuation.resume(result)
                     } catch (failure: InboxFailure) {
                         continuation.resumeWithException(failure)
-                    } catch (_: IOException) {
-                        continuation.resumeWithException(InboxFailure(Problem.NETWORK))
+                    } catch (error: IOException) {
+                        continuation.resumeWithException(transportFailure(error))
                     } catch (_: Exception) {
                         continuation.resumeWithException(InboxFailure(Problem.RESPONSE))
                     }
@@ -80,17 +81,29 @@ class HttpBackend(client: OkHttpClient = OkHttpClient()) : Backend {
         }
 }
 
-private fun checkStatus(code: Int) {
-    val problem = when (code) {
+private fun transportFailure(error: IOException) = InboxFailure(if (error is SSLException) Problem.TLS else Problem.NETWORK)
+
+private fun checkStatus(response: Response, history: Boolean) {
+    if (response.code == 400) throw InboxFailure(historyError(response))
+    val problem = when (response.code) {
         200 -> return
         in 300..399 -> Problem.REDIRECT
         401 -> Problem.AUTHENTICATION
         403 -> Problem.PERMISSION
-        404 -> Problem.NOT_FOUND
+        404 -> if (history) Problem.RESPONSE else Problem.NOT_FOUND
         in 500..599 -> Problem.NETWORK
         else -> Problem.RESPONSE
     }
     throw InboxFailure(problem)
+}
+
+private fun historyError(response: Response): Problem = try {
+    val source = response.body?.source()
+    if (source != null && !source.request(4097) && JSONObject(source.readUtf8()).opt("error") == "invalid_cursor") {
+        Problem.HISTORY_CURSOR
+    } else Problem.RESPONSE
+} catch (_: Exception) {
+    Problem.RESPONSE
 }
 
 private fun JSONObject.text(name: String): String = get(name).let {

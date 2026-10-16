@@ -29,7 +29,7 @@ import no.varde.app.inbox.AlertKey
 import no.varde.app.inbox.InboxState
 
 @Composable
-fun InboxScreen(state: InboxState, onRefresh: () -> Unit, onLoadOlder: () -> Unit, onSettings: () -> Unit, onAdd: () -> Unit, onAlert: (AlertKey) -> Unit) {
+fun InboxScreen(state: InboxState, onRefresh: () -> Unit, onLoadOlder: () -> Unit, onSettings: () -> Unit, onAdd: () -> Unit, onAlert: (AlertKey) -> Unit, onRetryConnection: (String) -> Unit, onEditConnection: (String) -> Unit) {
     val listState = rememberLazyListState()
     var lastRefresh by rememberSaveable { mutableIntStateOf(state.refreshRevision) }
     LaunchedEffect(state.refreshRevision) {
@@ -58,12 +58,19 @@ fun InboxScreen(state: InboxState, onRefresh: () -> Unit, onLoadOlder: () -> Uni
                     LazyColumn(state = listState, contentPadding = PaddingValues(vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         if (state.problems.isNotEmpty()) item(key = "incomplete") {
                             Column {
-                                Text("Results are incomplete. Refresh explicitly to retry unavailable connections.")
+                                Text(when {
+                                    state.loading -> "Refreshing connections. Previously displayed content remains visible."
+                                    state.problems.size < state.connections.size -> "Some connections are unavailable."
+                                    state.items.isEmpty() -> "No connections are available."
+                                    else -> "All connections are unavailable. Showing stale results."
+                                })
                                 TextButton(onClick = onSettings) { Text("Connection settings") }
                             }
                         }
                         items(state.problems.entries.toList(), key = { "problem/${it.key}" }) { (id, problem) ->
-                            Text("${state.connection(id)?.name.orEmpty()}: ${problem.explanation}")
+                            state.connection(id)?.let { connection ->
+                                ConnectionFailureCard(connection, problem, state.loading || state.saving, onRetryConnection, onEditConnection)
+                            }
                         }
                         items(state.items, key = { "alert/${it.key.connectionId}/${it.key.alertId}" }) { item ->
                             Card(Modifier.fillMaxWidth().clickable { onAlert(item.key) }) {

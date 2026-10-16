@@ -19,6 +19,17 @@ internal class HistorySession private constructor(private val sources: List<Sour
     val hasMore: Boolean get() = sources.any { it.problem == null && it.hasMore }
     val complete: Boolean get() = sources.all { it.problem == null && !it.hasMore }
 
+    fun withFailures(failures: Map<String, Problem>, previous: HistorySession? = this): HistorySession {
+        if (failures.isEmpty()) return this
+        return HistorySession(sources.map { source ->
+            val problem = failures[source.connection.id]
+            if (problem == null) source else {
+                val committed = previous?.sources?.find { it.connection.id == source.connection.id }
+                (committed ?: SourceBuffer(source.connection)).fork().apply { pause(problem) }
+            }
+        })
+    }
+
     suspend fun nextBatch(backend: Backend): HistoryBatch = coroutineScope {
         // Only the caller commits the returned session; cancellation cannot consume its buffers or cursors.
         val working = sources.map { it.fork() }
@@ -47,6 +58,8 @@ private class SourceBuffer(val connection: Connection) {
     private var nextCursor: String? = null
     private var lastReceived: InboxItem? = null
     val hasMore: Boolean get() = items.isNotEmpty() || !started || nextCursor != null
+
+    fun pause(failure: Problem) { problem = failure }
 
     fun fork() = SourceBuffer(connection).also {
         it.items.addAll(items)

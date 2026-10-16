@@ -16,6 +16,7 @@ fun VardeApp(inbox: Inbox) {
     val state by inbox.state.collectAsStateWithLifecycle()
     val navigation = rememberNavController()
     val addConnection = { inbox.beginConnectionEdit(); navigation.navigate("connection/new") }
+    val editConnection = { id: String -> inbox.beginConnectionEdit(); navigation.navigate("connection/$id") }
     MaterialTheme {
         Surface(modifier = androidx.compose.ui.Modifier.fillMaxSize()) {
             NavHost(navigation, startDestination = "inbox") {
@@ -26,13 +27,15 @@ fun VardeApp(inbox: Inbox) {
                         onAlert = { key ->
                             inbox.open(key)
                             navigation.navigate("detail")
-                        })
+                        },
+                        onRetryConnection = inbox::retryConnection,
+                        onEditConnection = editConnection)
                 }
                 composable("settings") {
                     ConnectionsScreen(state,
                         onBack = { navigation.popBackStack() },
                         onAdd = addConnection,
-                        onEdit = { inbox.beginConnectionEdit(); navigation.navigate("connection/$it") })
+                        onEdit = editConnection)
                 }
                 composable("connection/{id}") { entry ->
                     val id = entry.arguments?.getString("id")?.takeUnless { it == "new" }
@@ -52,8 +55,10 @@ fun VardeApp(inbox: Inbox) {
                 composable("detail") {
                     DetailScreen(state,
                         onBack = { inbox.closeDetail(); navigation.popBackStack() },
-                        onRetry = { state.detail?.key?.let(inbox::open) },
-                        onSettings = { navigation.navigate("settings") })
+                        onRetry = inbox::retryDetail,
+                        onSettings = { navigation.navigate("settings") },
+                        onRetryConnection = inbox::retryConnection,
+                        onEditConnection = editConnection)
                 }
             }
         }

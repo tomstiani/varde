@@ -18,21 +18,25 @@ import androidx.compose.ui.unit.dp
 import no.varde.app.inbox.InboxState
 
 @Composable
-fun DetailScreen(state: InboxState, onBack: () -> Unit, onRetry: () -> Unit, onSettings: () -> Unit) {
+fun DetailScreen(state: InboxState, onBack: () -> Unit, onRetry: () -> Unit, onSettings: () -> Unit, onRetryConnection: (String) -> Unit, onEditConnection: (String) -> Unit) {
     val detail = state.detail
+    val connection = detail?.key?.connectionId?.let(state::connection)
     Scaffold { padding ->
         Column(Modifier.fillMaxSize().padding(padding).padding(16.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             TextButton(onClick = onBack) { Text("Back to inbox") }
             TextButton(onClick = onSettings) { Text("Settings") }
-            detail?.key?.connectionId?.let(state::connection)?.let { Text(it.name) }
+            connection?.let { Text(it.name) }
             if (detail == null) Text("Reopen this alert from the inbox.")
             if (detail?.loading == true) CircularProgressIndicator()
-            detail?.problem?.let {
-                Text(it.explanation)
-                Button(onClick = onRetry) { Text("Retry detail") }
-                TextButton(onClick = onSettings) { Text("Connection settings") }
+            if (connection != null && detail?.sourceProblem != null) {
+                ConnectionFailureCard(connection, detail.sourceProblem, state.loading || state.saving, onRetryConnection, onEditConnection)
             }
-            if (detail?.stale == true) Text("Stale content — the alert could not be refreshed.")
+            detail?.problem?.takeUnless { it == detail.sourceProblem }?.let { Text(it.explanation) }
+            if (detail != null && !detail.loading && (detail.problem != null || detail.sourceProblem != null)) {
+                Button(onClick = onRetry) { Text("Retry detail") }
+                if (detail.alert == null) Text("No retained detail content is available.")
+            }
+            if (detail?.stale == true) Text("Stale content — the connection or detail could not be refreshed.")
             detail?.alert?.let { alert ->
                 SelectionContainer {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {

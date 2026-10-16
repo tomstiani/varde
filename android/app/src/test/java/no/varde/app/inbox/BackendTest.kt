@@ -58,7 +58,7 @@ class BackendTest {
             server.start()
             val backend = HttpBackend(OkHttpClient.Builder().sslSocketFactory(testTrust.sslSocketFactory(), testTrust.trustManager).build())
             val connection = Connection.create("Lab", server.url("/").toString(), "private-token")
-            for ((status, problem) in listOf(302 to Problem.REDIRECT, 401 to Problem.AUTHENTICATION, 403 to Problem.PERMISSION, 404 to Problem.NOT_FOUND, 503 to Problem.NETWORK, 200 to Problem.RESPONSE)) {
+            for ((status, problem) in listOf(302 to Problem.REDIRECT, 401 to Problem.AUTHENTICATION, 403 to Problem.PERMISSION, 404 to Problem.RESPONSE, 503 to Problem.NETWORK, 200 to Problem.RESPONSE)) {
                 server.enqueue(MockResponse().setResponseCode(status).setHeader("Location", server.url("/leak")).setBody("PRIVATE server error"))
                 try { backend.history(connection); fail("Failure accepted") } catch (failure: InboxFailure) {
                     assertEquals(problem, failure.problem)
@@ -69,13 +69,42 @@ class BackendTest {
         }
     }
 
+    @Test fun invalidCursorHasALocalRecoveryMessageWithoutEchoingServerContent() = runTest {
+        MockWebServer().use { server ->
+            server.useHttps(serverCertificates.sslSocketFactory(), false)
+            server.start()
+            val backend = HttpBackend(OkHttpClient.Builder().sslSocketFactory(testTrust.sslSocketFactory(), testTrust.trustManager).build())
+            val connection = Connection.create("Lab", server.url("/").toString(), "private-token")
+            server.enqueue(MockResponse().setResponseCode(400).setBody("""{"error":"invalid_cursor","message":"PRIVATE body private-token"}"""))
+            try { backend.history(connection, "expired"); fail("Expired cursor accepted") } catch (failure: InboxFailure) {
+                assertEquals(Problem.HISTORY_CURSOR, failure.problem)
+                assertFalse(failure.message.orEmpty().contains("PRIVATE"))
+                assertFalse(failure.message.orEmpty().contains("private-token"))
+            }
+        }
+    }
+
+    @Test fun missingDetailRemainsAnAlertSpecificFailure() = runTest {
+        MockWebServer().use { server ->
+            server.useHttps(serverCertificates.sslSocketFactory(), false)
+            server.start()
+            val backend = HttpBackend(OkHttpClient.Builder().sslSocketFactory(testTrust.sslSocketFactory(), testTrust.trustManager).build())
+            val connection = Connection.create("Lab", server.url("/").toString(), "private-token")
+            server.enqueue(MockResponse().setResponseCode(404).setBody("PRIVATE missing body"))
+            try { backend.read(connection, "unknown"); fail("Missing alert accepted") } catch (failure: InboxFailure) {
+                assertEquals(Problem.NOT_FOUND, failure.problem)
+                assertFalse(failure.message.orEmpty().contains("PRIVATE"))
+            }
+        }
+    }
+
     @Test fun defaultClientRejectsAnUntrustedCertificate() = runTest {
         MockWebServer().use { server ->
             server.useHttps(serverCertificates.sslSocketFactory(), false)
             server.start()
             val connection = Connection.create("Lab", server.url("/").toString(), "private-token")
             try { HttpBackend().history(connection); fail("Untrusted certificate accepted") } catch (failure: InboxFailure) {
-                assertEquals(Problem.NETWORK, failure.problem)
+                assertEquals(Problem.TLS, failure.problem)
             }
             assertEquals(0, server.requestCount)
         }

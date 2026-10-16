@@ -14,11 +14,13 @@ class Inbox(
     private val settings: ConnectionSettings,
     backend: Backend,
 ) {
-    private val backend = BoundedBackend(backend)
+    private val readFailures = mutableMapOf<String, Problem>()
+    private val backend = BoundedBackend(backend) { readFailures[it] }
     private val mutableState = MutableStateFlow(InboxState())
     val state = mutableState.asStateFlow()
     private var historyJob: Job? = null
     private var detailJob: Job? = null
+    private val loadedDetails = mutableMapOf<AlertKey, AlertDetail>()
     private var historySession: HistorySession? = null
     private var historyRevision = 0
     private var detailRevision = 0
@@ -63,6 +65,7 @@ class Inbox(
             try {
                 settings.save(updated)
                 if (reload) {
+                    loadedDetails.keys.removeAll { it.connectionId == affectedId }
                     historyRevision++
                     historyJob?.cancel()
                     historySession = null
@@ -95,6 +98,7 @@ class Inbox(
         if (state.value.loading) return
         historyJob?.cancel()
         val requestRevision = ++historyRevision
+        readFailures.clear()
         val connections = state.value.connections
         historySession = null
         if (connections.isEmpty()) {
@@ -103,8 +107,9 @@ class Inbox(
         }
         mutableState.update { it.copy(loading = true, loadingOlder = false) }
         historyJob = scope.launch {
-            val result = HistorySession.begin(connections).nextBatch(backend)
+            val batch = HistorySession.begin(connections).nextBatch(backend)
             if (historyRevision == requestRevision) {
+                val result = applyReadFailures(batch)
                 historySession = result.session
                 mutableState.update {
                     val retained = it.items.filter { item -> item.key.connectionId in result.problems }
@@ -114,12 +119,17 @@ class Inbox(
                         hasMore = result.session.hasMore,
                         historyComplete = result.session.complete,
                         refreshRevision = it.refreshRevision + 1,
+                        detail = it.detail?.let { detail -> detail.copy(sourceProblem = result.problems[detail.key.connectionId]) },
                         problems = result.problems,
                         staleConnections = result.problems.keys,
                     )
                 }
             }
         }
+    }
+
+    fun retryConnection(id: String) {
+        if (state.value.connection(id) != null && id in state.value.problems) refresh()
     }
 
     fun loadOlder() {
@@ -129,8 +139,9 @@ class Inbox(
         val requestRevision = ++historyRevision
         mutableState.update { it.copy(loadingOlder = true) }
         historyJob = scope.launch {
-            val result = session.nextBatch(backend)
+            val batch = session.nextBatch(backend)
             if (historyRevision == requestRevision) {
+                val result = applyReadFailures(batch)
                 historySession = result.session
                 mutableState.update {
                     it.copy(
@@ -138,6 +149,7 @@ class Inbox(
                         loadingOlder = false,
                         hasMore = result.session.hasMore,
                         historyComplete = result.session.complete,
+                        detail = it.detail?.let { detail -> detail.copy(sourceProblem = result.problems[detail.key.connectionId]) },
                         problems = result.problems,
                         staleConnections = result.problems.keys,
                     )
@@ -146,22 +158,50 @@ class Inbox(
         }
     }
 
-    fun open(key: AlertKey) {
+    private fun applyReadFailures(batch: HistoryBatch) = batch.copy(
+        items = batch.items.filterNot { it.key.connectionId in readFailures },
+        problems = batch.problems + readFailures,
+        session = batch.session.withFailures(readFailures, historySession),
+    )
+
+    private fun pauseHistoryFromDetail(connectionId: String, problem: Problem) {
+        readFailures[connectionId] = problem
+        historySession = historySession?.withFailures(readFailures)
+        mutableState.update {
+            it.copy(
+                problems = it.problems + (connectionId to problem),
+                staleConnections = it.staleConnections + connectionId,
+                hasMore = historySession?.hasMore ?: it.hasMore,
+                historyComplete = false,
+                detail = it.detail?.let { detail -> if (detail.key.connectionId == connectionId) detail.copy(sourceProblem = problem) else detail },
+            )
+        }
+    }
+
+    fun open(key: AlertKey) = openDetail(key, retry = false)
+
+    fun retryDetail() { state.value.detail?.key?.let { openDetail(it, retry = true) } }
+
+    private fun openDetail(key: AlertKey, retry: Boolean) {
         val connection = state.value.connection(key.connectionId) ?: return
         if (state.value.items.none { it.key == key } && state.value.detail?.key != key) return
         detailJob?.cancel()
         val requestRevision = ++detailRevision
-        val retained = state.value.detail?.takeIf { it.key == key }?.alert
-        mutableState.update { it.copy(detail = DetailState(key, retained)) }
+        val retained = loadedDetails[key]
+        val sourceProblem = state.value.problems[key.connectionId]
+        mutableState.update { it.copy(detail = DetailState(key, retained, loading = sourceProblem == null || retry, sourceProblem = sourceProblem)) }
+        if (sourceProblem != null && !retry) return
         detailJob = scope.launch {
             try {
                 val alert = backend.read(connection, key.alertId)
                 if (detailRequestIsCurrent(key, connection, requestRevision)) {
-                    mutableState.update { it.copy(detail = DetailState(key, alert, loading = false)) }
+                    loadedDetails[key] = alert
+                    mutableState.update { it.copy(detail = DetailState(key, alert, loading = false, sourceProblem = it.problems[key.connectionId])) }
                 }
             } catch (failure: InboxFailure) {
                 if (detailRequestIsCurrent(key, connection, requestRevision)) {
-                    mutableState.update { it.copy(detail = DetailState(key, retained, false, failure.problem, retained != null)) }
+                    if (failure.problem.affectsConnection) pauseHistoryFromDetail(key.connectionId, failure.problem)
+                    mutableState.update { it.copy(detail = DetailState(key, retained, false, failure.problem, it.problems[key.connectionId])) }
                 }
             }
         }
