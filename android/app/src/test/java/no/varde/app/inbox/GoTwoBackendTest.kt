@@ -44,8 +44,11 @@ class GoTwoBackendTest {
                             suspend fun settled() = withTimeout(30_000) { inbox.state.first { it.initialized && !it.loading && !it.loadingOlder && !it.saving && it.items.isNotEmpty() } }
                             suspend fun loadAll() {
                                 while (inbox.state.value.hasMore) {
+                                    val previousSize = inbox.state.value.items.size
                                     withContext(dispatcher) { inbox.loadOlder() }
                                     settled()
+                                    val added = inbox.state.value.items.size - previousSize
+                                    assertTrue("Load older must add between 1 and 50 rows", added in 1..50)
                                 }
                             }
                             withTimeout(30_000) { inbox.state.first { !it.loading && it.items.size == 50 } }

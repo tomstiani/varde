@@ -43,6 +43,55 @@ class PhoneAcceptanceSafetyTest(unittest.TestCase):
         environment = dict(os.environ, PATH=str(directory) + os.pathsep + os.environ["PATH"], FAKE_ADB_STATE=str(state), FAKE_ADB_LOG=str(log))
         return environment, state, log
 
+    def test_invalid_previous_connections_are_rejected_before_device_access(self):
+        invalid = [
+            None,
+            {"connections": []},
+            ["not-a-connection"],
+            [{"name": "Mac A"}],
+            [{"name": "Mac A", "url": "https://a.example.invalid/", "secret": "synthetic-private-value"}],
+            [{"name": "Mac A", "url": "https://a.example.invalid/", "original": {"summary": "synthetic-private-value"}}],
+            [{"name": 12, "url": "https://a.example.invalid/"}],
+            [{"name": "Mac A", "url": None}],
+            [{"name": " ", "url": "https://a.example.invalid/"}],
+            [{"name": "Mac A", "url": "not-a-url"}],
+            [{"name": "Mac A", "url": "https://user:synthetic-private-value@a.example.invalid/"}],
+            [{"name": "Mac A", "url": "https://a.example.invalid/?secret=synthetic-private-value"}],
+            [{"name": "Mac A", "url": "https://a.example.invalid/#synthetic-private-value"}],
+            [{"name": "Mac A", "url": "https://a.example.invalid:bad/"}],
+            [{"name": "Mac A", "url": "http://192.168.1.1/"}],
+            [{"name": "Mac A", "url": "https://a.example.invalid/ synthetic-private-value"}],
+        ]
+        for index, value in enumerate(invalid):
+            with self.subTest(case=index), tempfile.TemporaryDirectory(prefix="varde-phone-", dir="/tmp") as temporary:
+                directory = Path(temporary)
+                environment, _, log = self.fixture(directory, {"serial": "synthetic-phone", "mappings": {}})
+                allowlist = directory / "previous.json"
+                allowlist.write_text(json.dumps(value))
+                allowlist.chmod(0o600)
+                report = directory / "phone-result.json"
+                report.write_text(json.dumps({"passed": True}))
+                report.chmod(0o600)
+                result = subprocess.run([sys.executable, str(SCRIPT), "--state-dir", str(directory / "run"), "--previous-connections", str(allowlist)], env=environment, capture_output=True)
+                self.assertNotEqual(0, result.returncode)
+                self.assertFalse(log.exists(), "Invalid allowlist reached device access")
+                self.assertFalse(report.exists())
+                self.assertNotIn(b"synthetic-private-value", result.stdout + result.stderr)
+
+    def test_valid_previous_connections_reach_device_check(self):
+        with tempfile.TemporaryDirectory(prefix="varde-phone-", dir="/tmp") as temporary:
+            directory = Path(temporary)
+            environment, _, log = self.fixture(directory, {"connected": False, "serial": "synthetic-phone", "mappings": {}})
+            allowlist = directory / "previous.json"
+            allowlist.write_text(json.dumps([
+                {"name": "Mac A", "url": "https://a.example.invalid/"},
+                {"name": "Mac B", "url": "http://127.0.0.1:18082/"},
+            ]))
+            allowlist.chmod(0o600)
+            result = subprocess.run([sys.executable, str(SCRIPT), "--state-dir", str(directory / "run"), "--previous-connections", str(allowlist)], env=environment, capture_output=True)
+            self.assertNotEqual(0, result.returncode)
+            self.assertEqual([["-d", "get-serialno"]], [json.loads(line) for line in log.read_text().splitlines()])
+
     def test_cleanup_preserves_changed_and_unrelated_mappings(self):
         with tempfile.TemporaryDirectory(prefix="varde-phone-", dir="/tmp") as temporary:
             directory = Path(temporary)

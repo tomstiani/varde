@@ -129,12 +129,15 @@ class LiveSetupTest {
                 assertEquals(configuration.getString("expectedSummary"), inbox!!.state.value.detail?.alert?.summary)
                 compose.onNodeWithText("Back to inbox").performClick()
                 stage = "browse-bounded-history"
-                repeat(10) {
-                    if (!inbox!!.state.value.hasMore) return@repeat
+                var loadOlderActions = 0
+                while (inbox!!.state.value.hasMore) {
+                    assertTrue("History did not finish within the fixture action limit", loadOlderActions++ < 10)
                     val previousSize = inbox!!.state.value.items.size
                     compose.onNode(hasScrollAction()).performScrollToNode(hasText("Load older"))
                     compose.onNodeWithText("Load older").performClick()
                     compose.waitUntil(30_000) { !inbox!!.state.value.loadingOlder && inbox!!.state.value.items.size > previousSize }
+                    val added = inbox!!.state.value.items.size - previousSize
+                    assertTrue("Load older must add between 1 and 50 rows", added in 1..50)
                 }
                 assertEquals(configuration.getInt("expectedAlertCount"), inbox!!.state.value.items.size)
                 assertTrue(inbox!!.state.value.historyComplete)

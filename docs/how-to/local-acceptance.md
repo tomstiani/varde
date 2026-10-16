@@ -68,12 +68,12 @@ The helper:
 2. Adds `adb reverse` mappings for the two fixture ports, refusing conflicting mappings.
 3. Transfers credentials through stdin into an app-private, backup-excluded temporary file. Secrets do not appear in shell arguments, chat, or normal output.
 4. Explicitly runs `LiveSetupTest`, which uses the normal settings screens, secure storage, HTTP Adapter, and backend Interface. It does not inject another backend or trust manager.
-5. Checks the initial 50-row combined inbox, source labels, an unchanged original, and bounded older-history browsing until all expected alerts are loaded.
+5. Checks the initial 50-row combined inbox, source labels, an unchanged original, and that each load-older action adds 1–50 rows until all expected alerts are loaded.
 6. Deletes its temporary plaintext input and prints only a redacted result. It leaves the normal app open, with the named connections stored encrypted.
 
 Ordinary connected tests do not read the private profile or contact live backends: the live check requires an explicit instrumentation argument and does not launch the real activity before that gate.
 
-The helper will not overwrite unrelated app connections. For this session's approved transition from the abandoned Tailscale fixture, a private names/URLs-only allowlist was used with `--previous-connections`; do not supply arbitrary real configurations through that option.
+The helper will not overwrite unrelated app connections. For this session's approved transition from the abandoned Tailscale fixture, a private names/URLs-only allowlist was used with `--previous-connections`. Setup validates it before any device access: a JSON array of objects containing exactly nonblank string `name` and `url` fields. URLs must use HTTPS or literal-loopback HTTP, without embedded credentials, queries or fragments. Extra fields and malformed values are rejected without echoing their content; do not supply arbitrary real configurations.
 
 If the phone disconnects, reconnect and authorize it, then rerun the helper. USB forwarding does not survive every disconnect. If an interrupted run could not delete its temporary phone input, `--cleanup` removes that known test file after reconnection. Do not paste `.pi/acceptance/live/connections.json` into chat or a bug report.
 

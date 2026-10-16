@@ -20,6 +20,25 @@ def private_json(path):
     return json.loads(path.read_text())
 
 
+def approved_previous_connections(path):
+    entries = private_json(path)
+    if not isinstance(entries, list):
+        raise ValueError("invalid_previous_connections")
+    for entry in entries:
+        if not isinstance(entry, dict) or set(entry) != {"name", "url"}:
+            raise ValueError("invalid_previous_connections")
+        if any(not isinstance(value, str) or not value.strip() for value in entry.values()):
+            raise ValueError("invalid_previous_connections")
+        url = entry["url"]
+        parsed = urlsplit(url)
+        safe_transport = parsed.scheme == "https" or (parsed.scheme == "http" and parsed.hostname == "127.0.0.1")
+        if (not safe_transport or not parsed.hostname or parsed.port == 0 or
+                parsed.username is not None or parsed.password is not None or parsed.query or parsed.fragment or
+                any(ord(character) <= 32 or ord(character) == 127 for character in url)):
+            raise ValueError("invalid_previous_connections")
+    return entries
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--state-dir", type=Path, default=ROOT / ".pi/acceptance/live")
@@ -33,6 +52,9 @@ def main():
     if not arguments.cleanup and report.exists():
         private_json(report)
         report.unlink()
+    previous_connections = None
+    if arguments.previous_connections and not arguments.cleanup:
+        previous_connections = approved_previous_connections(arguments.previous_connections)
 
     def device(*command, **options):
         return subprocess.run([adb, "-d", *command], check=True, capture_output=True, timeout=options.pop("timeout", 30), **options)
@@ -86,8 +108,8 @@ def main():
         expectedTitle=f"Mac B scripted alert {number:03d}",
         expectedSummary=f"Synthetic acceptance data only. Source B, seed event {number:03d}. No homelab data.",
     )
-    if arguments.previous_connections:
-        configuration["previousConnections"] = private_json(arguments.previous_connections)
+    if previous_connections is not None:
+        configuration["previousConnections"] = previous_connections
     remote = "run-as no.varde.app sh -c 'umask 077; mkdir -p no_backup; cat > no_backup/live-acceptance.json'"
     device("shell", "run-as no.varde.app rm -f no_backup/live-result.json")
     launched = False
