@@ -23,7 +23,8 @@ fun DetailScreen(state: InboxState, onBack: () -> Unit, onRetry: () -> Unit, onS
     Scaffold { padding ->
         Column(Modifier.fillMaxSize().padding(padding).padding(16.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             TextButton(onClick = onBack) { Text("Back to inbox") }
-            state.connection?.let { Text(it.name) }
+            TextButton(onClick = onSettings) { Text("Settings") }
+            detail?.key?.connectionId?.let(state::connection)?.let { Text(it.name) }
             if (detail == null) Text("Reopen this alert from the inbox.")
             if (detail?.loading == true) CircularProgressIndicator()
             detail?.problem?.let {

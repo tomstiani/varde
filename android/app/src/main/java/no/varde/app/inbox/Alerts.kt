@@ -12,13 +12,16 @@ data class AlertRow(
 )
 
 data class AlertDetail(val row: AlertRow, val summary: String)
+data class HistoryPage(val items: List<AlertRow>, val nextCursor: String? = null)
+data class AlertKey(val connectionId: String, val alertId: String)
+data class InboxItem(val key: AlertKey, val row: AlertRow)
 
 interface Backend {
-    suspend fun history(connection: Connection): List<AlertRow>
+    suspend fun history(connection: Connection, cursor: String? = null): HistoryPage
     suspend fun read(connection: Connection, id: String): AlertDetail
 }
 
 interface ConnectionSettings {
-    suspend fun load(): Connection?
-    suspend fun save(connection: Connection)
+    suspend fun load(): List<Connection>
+    suspend fun save(connections: List<Connection>)
 }

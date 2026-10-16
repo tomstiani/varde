@@ -22,17 +22,18 @@ class HttpBackend(client: OkHttpClient = OkHttpClient()) : Backend {
         .callTimeout(15, TimeUnit.SECONDS)
         .build()
 
-    override suspend fun history(connection: Connection): List<AlertRow> {
+    override suspend fun history(connection: Connection, cursor: String?): HistoryPage {
         val url = connection.endpoint("v1", "alerts").newBuilder()
             .addQueryParameter("order", "acceptedAt")
-            .addQueryParameter("limit", "50").build()
+            .addQueryParameter("limit", "50")
+            .apply { cursor?.let { addQueryParameter("cursor", it) } }.build()
         return request(connection, url) { json ->
             val items = json.getJSONArray("items")
             require(items.length() <= 50)
             require(json.has("nextCursor") && (json.isNull("nextCursor") || json.get("nextCursor") is String))
             val rows = (0 until items.length()).map { parseRow(items.getJSONObject(it)) }
             require(rows.map { it.id }.distinct().size == rows.size)
-            rows
+            HistoryPage(rows, if (json.isNull("nextCursor")) null else json.getString("nextCursor"))
         }
     }
 
@@ -53,7 +54,7 @@ class HttpBackend(client: OkHttpClient = OkHttpClient()) : Backend {
             val call = transport.newCall(request)
             continuation.invokeOnCancellation { call.cancel() }
             call.enqueue(object : Callback {
-                override fun onFailure(call: Call, error: IOException) {
+                override fun onFailure(call: Call, e: IOException) {
                     continuation.resumeWithException(InboxFailure(Problem.NETWORK))
                 }
 

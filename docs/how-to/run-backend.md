@@ -2,7 +2,7 @@
 
 Build and test authenticated alert acceptance, original retrieval, duplicate recovery, and restart-safe text fallback. This implements the foundation in [issue #9](https://github.com/tomstiani/varde/issues/9), not the full Android release.
 
-**Current limits:** plain-text alerts only; no typed measurements, rich generation, paid model requests, push, or change-sync requests. [Public history pagination](read-history.md) and a [single-connection Android inbox](../../android/README.md) are implemented; multiple connections and Android older-history browsing remain later slices. The executable accepts only literal loopback listen addresses. It is a development increment, not supported non-loopback deployment packaging.
+**Current limits:** plain-text alerts only; no typed measurements, rich generation, paid model requests, push, or change-sync requests. [Public history pagination](read-history.md) and a [named-connection Android inbox](../../android/README.md) are implemented; Android older-history browsing and full failed-source recovery remain later slices. The executable accepts only literal loopback listen addresses. It is a development increment, not supported non-loopback deployment packaging.
 
 ## Prerequisites
 

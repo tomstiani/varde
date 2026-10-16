@@ -22,7 +22,8 @@ class BackendTest {
             val connection = Connection.create("Lab", server.url("/prefix/").toString(), "private-token")
             server.enqueue(MockResponse().setHeader("Content-Type", "application/json").setBody("""{"items":[{"id":"one","acceptedAt":"2026-01-01T12:00:00Z","title":"Disk pressure","priority":"high","observedAt":"2026-01-01T14:00:00+02:00","presentation":{"state":"pending","revision":0}}],"nextCursor":null}"""))
             val rows = backend.history(connection)
-            assertEquals("Disk pressure", rows.single().title)
+            assertEquals("Disk pressure", rows.items.single().title)
+            assertNull(rows.nextCursor)
             val request = server.takeRequest()
             assertEquals("/prefix/v1/alerts?order=acceptedAt&limit=50", request.path)
             assertEquals("Bearer private-token", request.getHeader("Authorization"))
@@ -31,6 +32,23 @@ class BackendTest {
             assertEquals("", detail.summary)
             assertEquals(1, detail.row.presentation.revision)
             assertEquals("/prefix/v1/alerts/one", server.takeRequest().path)
+        }
+    }
+
+    @Test fun continuesWithTheOpaqueCursorAndUnchangedPageOptions() = runTest {
+        MockWebServer().use { server ->
+            server.useHttps(serverCertificates.sslSocketFactory(), false)
+            server.start()
+            val backend = HttpBackend(OkHttpClient.Builder().sslSocketFactory(testTrust.sslSocketFactory(), testTrust.trustManager).build())
+            val connection = Connection.create("Lab", server.url("/").toString(), "private-token")
+            val token = "opaque+ /?token"
+            server.enqueue(MockResponse().setBody("""{"items":[],"nextCursor":null}"""))
+            backend.history(connection, token)
+            val request = server.takeRequest()
+            assertEquals(token, request.requestUrl!!.queryParameter("cursor"))
+            assertEquals("50", request.requestUrl!!.queryParameter("limit"))
+            assertEquals("acceptedAt", request.requestUrl!!.queryParameter("order"))
+            assertEquals("Bearer private-token", request.getHeader("Authorization"))
         }
     }
 

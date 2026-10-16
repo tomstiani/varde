@@ -1,8 +1,8 @@
-# Varde Android: first inbox slice
+# Varde Android: combined newest-alert inbox
 
-Native Kotlin + Jetpack Compose. This increment implements [issue #12](https://github.com/tomstiani/varde/issues/12): one named connection, its newest 50 plain-text alerts, manual refresh, and full-original details.
+Native Kotlin + Jetpack Compose. [Issue #12](https://github.com/tomstiani/varde/issues/12) established the first inbox; [issue #13](https://github.com/tomstiani/varde/issues/13) adds multiple named connections, a combined newest-results batch, source-correct details, and connection management.
 
-**Not yet implemented:** multiple connections, combined feeds, Android load-older, push, change sync, rich views, AI, or durable offline alert content. Backend history already supports continuation for later slices. This is not the full #11 milestone.
+**Not yet implemented:** Android load-older, complete failed-source pagination/recovery, push, change sync, rich views, AI, or durable offline alert content. Backend history supports continuation; the initial merge uses it when necessary to select the newest batch correctly, but there is no load-older interaction yet. This is not the full #11 milestone.
 
 ## Prerequisites
 
@@ -29,18 +29,26 @@ The debug APK is generated under `app/build/outputs/apk/debug/`. Release signing
 2. Issue an installation credential through the local operator command. Do not use a sender credential or put the secret in shell arguments, logs or committed files.
 3. Provide an operator-managed HTTPS proxy or tunnel that reaches the backend's loopback listener. Its certificate must be trusted by Android. Do not disable certificate checks; a self-signed development certificate is not accepted by the app.
 4. Install and open Varde. Select **Add connection**, then enter a friendly name, HTTPS base URL and installation credential. A base-path prefix is supported when the proxy consistently maps it to the backend; redirects are not followed.
-5. Select **Save connection**. The newest alerts load automatically. Tap an alert to read the full original. Returning to the inbox does not fetch again; use **Refresh** to discover arrivals.
+5. Select **Save connection**. The newest alerts load automatically. Tap an alert to read the full original from its labelled source. Returning to the inbox does not fetch again; use **Refresh** to discover arrivals.
+6. Use **Settings → Add connection** for more backends. Each needs a distinct friendly name and normalized HTTPS URL. Different aliases pointing to the same backend are not detected and can duplicate alerts.
+7. Select **Edit <name>** to rename, replace credentials, change the URL, or remove a connection. Removal asks for confirmation and deletes local settings/content only; revoke the server credential separately if needed.
 
-The single connection is stored encrypted using an Android Keystore key in app-private, backup-excluded storage. Its credential is never displayed again. This first slice requires re-entering a credential when replacing settings; richer connection editing follows in #13. Unreachable settings can be saved and corrected without waiting for a successful probe.
+Connections are stored together in a versioned encrypted file using an Android Keystore key in app-private, backup-excluded storage. Existing single-connection files remain readable; the next successful settings write upgrades their format without changing identity or credentials. Alert content is not part of this file.
+
+A rename keeps loaded rows and details, updates source labels, and does not issue network requests. Leave the credential field blank to retain it. Changing a URL requires explicit credential entry so the app cannot silently forward a saved secret to a new destination. URL or credential changes discard that source's content and start a fresh combined session. Add/remove membership changes also refresh; unrelated displayed content remains visible while loading. Old requests cannot restore removed or replaced source content.
+
+Unreachable settings can be saved and corrected without waiting for a successful probe. Friendly names compare using full locale-independent Unicode case folding, including expansions such as `Straße`/`STRASSE`; their display spelling remains unchanged. ICU4J is pinned so comparisons behave consistently across supported Android versions. URL normalization uses the HTTP library for host/scheme casing and default ports, and normalizes the trailing base-path slash while preserving path casing.
 
 Alert rows, details and cursors live only in memory. Activity recreation can retain a session; process death starts a fresh load from saved settings. There is no polling, background delivery, or persistent HTTP content cache. Screens are protected from capture/recents previews. A failed refresh retains already displayed rows as stale and distinguishes failure from empty history. Authentication errors direct you to settings. Network/TLS failures use safe messages, not raw server exceptions.
 
-Inbox order uses backend acceptance time; rows show original event time separately. Ordinary event times display in the device timezone. Leap-second or unusually precise spellings that cannot be formatted remain visible verbatim. Priority and source are always readable text, not colour alone.
+Each fresh load selects up to 50 alerts across responding sources, using bounded per-source pages of 50 rather than fetching archives. At most four backend requests run concurrently, including details, with a 15-second deadline per request and no hidden retries. Failed sources are explicitly marked incomplete; previously displayed source content can remain as stale, so a partial-refresh display can include retained rows beyond the fresh 50-row batch. Full failed-source older-history recovery follows in #15.
+
+Inbox order uses backend acceptance instant, then stable local connection ID, then descending alert ID. Equal server alert IDs from different sources remain distinct. Renaming never changes the tie-breaker. Backend clock differences can affect apparent global order; this is not a cross-backend atomic snapshot. Rows show original event time separately. Ordinary event times display in the device timezone. Leap-second or unusually precise spellings that cannot be formatted remain visible verbatim. Priority and source are always readable text, not colour alone.
 
 ## Code and tests
 
 - `app` contains the executable, screens, inbox Module, secure settings and HTTPS Adapter. Screens observe the inbox Interface rather than coordinating persistence or transport themselves.
-- JVM tests exercise connection validation, inbox refresh/detail behaviour, obsolete responses, TLS, redirects and safe transport errors.
-- Connected tests exercise settings encryption/recreation/corruption and Compose setup, source labels, navigation and explicit refresh.
+- JVM tests exercise Unicode name/URL validation, merged ordering, cursor replenishment, batch/request limits, timeout/no-retry behaviour, source-scoped details, rename/edit/removal and obsolete responses, TLS, redirects and safe transport errors.
+- Connected tests exercise multi-connection encryption/recreation/removal/corruption, the legacy encrypted format, and Compose setup, combined source labels, rename-without-secret-entry, removal, navigation and explicit refresh.
 
 The local verification used an API 36.1 emulator. Real n8n submission and physical-phone HTTPS acceptance, and the two-backend compatibility harness, remain explicit work in #16. Do not claim those checks passed from mocked UI or JVM tests.

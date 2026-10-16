@@ -15,28 +15,44 @@ import no.varde.app.inbox.Inbox
 fun VardeApp(inbox: Inbox) {
     val state by inbox.state.collectAsStateWithLifecycle()
     val navigation = rememberNavController()
+    val addConnection = { inbox.beginConnectionEdit(); navigation.navigate("connection/new") }
     MaterialTheme {
         Surface(modifier = androidx.compose.ui.Modifier.fillMaxSize()) {
             NavHost(navigation, startDestination = "inbox") {
                 composable("inbox") {
                     InboxScreen(state, inbox::refresh,
                         onSettings = { navigation.navigate("settings") },
-                        onAlert = { id ->
-                            inbox.open(id)
+                        onAdd = addConnection,
+                        onAlert = { key ->
+                            inbox.open(key)
                             navigation.navigate("detail")
                         })
                 }
                 composable("settings") {
-                    ConnectionScreen(state,
+                    ConnectionsScreen(state,
+                        onBack = { navigation.popBackStack() },
+                        onAdd = addConnection,
+                        onEdit = { inbox.beginConnectionEdit(); navigation.navigate("connection/$it") })
+                }
+                composable("connection/{id}") { entry ->
+                    val id = entry.arguments?.getString("id")?.takeUnless { it == "new" }
+                    ConnectionScreen(state, id,
                         onBack = { navigation.popBackStack() },
                         onSave = { name, url, secret ->
-                            inbox.save(name, url, secret) { navigation.popBackStack() }
-                        })
+                            inbox.save(id, name, url, secret) {
+                                if (navigation.currentBackStackEntry?.id == entry.id) navigation.popBackStack()
+                            }
+                        },
+                        onRemove = { id?.let {
+                            inbox.remove(it) {
+                                if (navigation.currentBackStackEntry?.id == entry.id) navigation.popBackStack()
+                            }
+                        } })
                 }
                 composable("detail") {
                     DetailScreen(state,
                         onBack = { inbox.closeDetail(); navigation.popBackStack() },
-                        onRetry = { state.detail?.id?.let(inbox::open) },
+                        onRetry = { state.detail?.key?.let(inbox::open) },
                         onSettings = { navigation.navigate("settings") })
                 }
             }

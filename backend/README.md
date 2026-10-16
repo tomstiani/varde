@@ -25,4 +25,4 @@ See [local setup and HTTP reference](../docs/how-to/run-backend.md) for prerequi
 
 Within a package, files follow responsibilities such as `submit.go`, `credentials.go`, and `timestamp.go`; related helpers stay beside the operation they support. See the [coding standards](../CODING_STANDARDS.md).
 
-The single-connection Android inbox lives separately in [`android/`](../android/). This module does not build or package it. [History request and cursor contracts](../docs/how-to/read-history.md) support its timestamp-ordered newest-results view and later pagination.
+The named-connection Android inbox lives separately in [`android/`](../android/). This module does not build or package it. [History request and cursor contracts](../docs/how-to/read-history.md) support its timestamp-ordered newest-results view and later pagination.

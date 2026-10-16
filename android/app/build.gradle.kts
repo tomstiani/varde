@@ -35,6 +35,7 @@ dependencies {
     implementation("androidx.compose.material3:material3:1.3.2")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.ibm.icu:icu4j:76.1")
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
     testImplementation("org.json:json:20240303")
