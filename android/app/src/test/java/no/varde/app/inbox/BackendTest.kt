@@ -52,6 +52,45 @@ class BackendTest {
         }
     }
 
+    @Test fun validatesRecoveryWireBoundsAndDistinguishesResetFromOrdinaryFailure() = runTest {
+        MockWebServer().use { server ->
+            server.useHttps(serverCertificates.sslSocketFactory(),false)
+            server.start()
+            val backend=HttpBackend(OkHttpClient.Builder().sslSocketFactory(testTrust.sslSocketFactory(),testTrust.trustManager).build())
+            val connection=Connection.create("Lab",server.url("/prefix/").toString(),"private-token")
+            server.enqueue(MockResponse().setBody("""{"cursor":"baseline"}"""))
+            assertEquals("baseline",backend.checkpoint(connection))
+            val checkpoint=server.takeRequest()
+            assertEquals("POST",checkpoint.method)
+            assertEquals("/prefix/v1/changes/checkpoint",checkpoint.path)
+            assertEquals(0,checkpoint.bodySize)
+            val items=(1..51).joinToString { """{"alertId":"alert-$it","kind":"accepted","revision":0}""" }
+            for(body in listOf(
+                """{"items":[$items],"nextCursor":"next","hasMore":true}""",
+                """{"items":[],"nextCursor":"next","hasMore":true}""",
+                """{"items":[{"alertId":"one","kind":"accepted","revision":1}],"nextCursor":"next","hasMore":false}""",
+                """{"items":[{"alertId":"one","kind":"accepted","revision":0}],"nextCursor":"baseline","hasMore":false}""",
+                """{"items":[],"nextCursor":null,"hasMore":false}"""
+            )) {
+                server.enqueue(MockResponse().setBody(body))
+                try { backend.changes(connection,"baseline"); fail("Malformed recovery page accepted") }
+                catch(failure:InboxFailure) { assertEquals(Problem.RESPONSE,failure.problem) }
+            }
+            for((status,body,expected) in listOf(
+                Triple(400,"""{"error":"invalid_cursor","message":"PRIVATE"}""",Problem.RECOVERY_CURSOR),
+                Triple(409,"""{"error":"sync_reset_required"}""",Problem.RECOVERY_CURSOR),
+                Triple(409,"""{"error":"identity_conflict"}""",Problem.RESPONSE),
+                Triple(400,"""{"error":"sync_reset_required"}""",Problem.RESPONSE),
+                Triple(302,"PRIVATE",Problem.REDIRECT)
+            )) {
+                server.enqueue(MockResponse().setResponseCode(status).setHeader("Location",server.url("/leak")).setBody(body))
+                try { backend.changes(connection,"baseline"); fail("Recovery error accepted") }
+                catch(failure:InboxFailure) { assertEquals(expected,failure.problem); assertFalse(failure.message.orEmpty().contains("PRIVATE")) }
+            }
+            assertEquals(11,server.requestCount)
+        }
+    }
+
     @Test fun refusesRedirectsAndNeverEchoesServerErrors() = runTest {
         MockWebServer().use { server ->
             server.useHttps(serverCertificates.sslSocketFactory(), false)

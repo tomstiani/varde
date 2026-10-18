@@ -14,6 +14,8 @@ type handler struct {
 func New(store *lifecycle.Lifecycle) http.Handler {
 	h := handler{store: store}
 	mux := http.NewServeMux()
+	mux.HandleFunc("POST /v1/changes/checkpoint", h.checkpoint)
+	mux.HandleFunc("GET /v1/changes", h.changes)
 	mux.HandleFunc("POST /v1/alerts", h.submitAlert)
 	mux.HandleFunc("GET /v1/alerts", h.history)
 	mux.HandleFunc("GET /v1/alerts/{alertId}", h.readAlert)

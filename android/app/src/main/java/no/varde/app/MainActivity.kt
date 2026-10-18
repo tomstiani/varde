@@ -32,9 +32,16 @@ class MainActivity : ComponentActivity() {
         if (savedInstanceState == null) model.openNotification(intent)
         setContent {
             val notification by model.notification.collectAsStateWithLifecycle()
+            val recoveryProblems by model.recoveryProblems.collectAsStateWithLifecycle()
             VardeApp(model.inbox, notification, model::notificationHandled,
-                notificationTools = { LocalNotificationTools(model.inbox) })
+                notificationTools = { LocalNotificationTools(model.inbox) },
+                recoveryProblems = recoveryProblems, onRecoveryRetry = model::retryRecovery)
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        ViewModelProvider(this)[InboxViewModel::class.java].recoverAlerts()
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -49,6 +56,7 @@ class InboxViewModel(application: Application) : AndroidViewModel(application) {
     val inbox = Inbox(viewModelScope, runtime.settings, runtime.backend)
     private val mutableNotification = MutableStateFlow<NotificationDestination?>(null)
     val notification = mutableNotification.asStateFlow()
+    val recoveryProblems = runtime.coordinator.recoveryProblems
 
     init {
         viewModelScope.launch {
@@ -67,6 +75,9 @@ class InboxViewModel(application: Application) : AndroidViewModel(application) {
             } catch (_: no.varde.app.inbox.InboxFailure) { }
         }
     }
+
+    fun recoverAlerts() { runtime.launch { runtime.coordinator.recoverAll() } }
+    fun retryRecovery(connectionId: String) { runtime.launch { runtime.coordinator.recover(connectionId) } }
 
     fun notificationHandled() { mutableNotification.value = null }
 }

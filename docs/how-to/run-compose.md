@@ -1,6 +1,6 @@
 # Run Varde with Docker Compose and Pangolin
 
-Run the plain-text backend on a Linux server and reach it through your existing Pangolin site. This is an initial homelab deployment, not a claim that remote HTTPS or n8n acceptance has passed. Push, AI-generated views, change sync and supported backup tooling are not implemented.
+Run the plain-text backend on a Linux server and reach it through your existing Pangolin site. This is an initial homelab deployment, not a claim that remote HTTPS or n8n acceptance has passed. Push, AI-generated views, background recovery and supported backup tooling are not implemented. [Foreground change recovery](recover-alerts.md) is available when opening Android.
 
 ## Prerequisites
 

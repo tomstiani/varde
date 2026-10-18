@@ -27,9 +27,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import no.varde.app.inbox.AlertKey
 import no.varde.app.inbox.InboxState
+import no.varde.app.inbox.Problem
 
 @Composable
-fun InboxScreen(state: InboxState, onRefresh: () -> Unit, onLoadOlder: () -> Unit, onSettings: () -> Unit, onAdd: () -> Unit, onAlert: (AlertKey) -> Unit, onRetryConnection: (String) -> Unit, onEditConnection: (String) -> Unit) {
+fun InboxScreen(state: InboxState, onRefresh: () -> Unit, onLoadOlder: () -> Unit, onSettings: () -> Unit, onAdd: () -> Unit, onAlert: (AlertKey) -> Unit, onRetryConnection: (String) -> Unit, onEditConnection: (String) -> Unit, recoveryProblems: Map<String, Problem> = emptyMap()) {
     val listState = rememberLazyListState()
     var lastRefresh by rememberSaveable { mutableIntStateOf(state.refreshRevision) }
     LaunchedEffect(state.refreshRevision) {
@@ -56,6 +57,12 @@ fun InboxScreen(state: InboxState, onRefresh: () -> Unit, onLoadOlder: () -> Uni
                     if (state.loading) CircularProgressIndicator()
                     if (!state.loading && state.problems.isEmpty() && state.items.isEmpty()) Text("No alerts yet.")
                     LazyColumn(state = listState, contentPadding = PaddingValues(vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        if (recoveryProblems.isNotEmpty()) item(key = "recovery-incomplete") {
+                            Column {
+                                Text("Alert recovery is incomplete for ${state.connections.filter { it.id in recoveryProblems }.joinToString { it.name }}.")
+                                TextButton(onClick = onSettings) { Text("Alert recovery settings") }
+                            }
+                        }
                         if (state.problems.isNotEmpty()) item(key = "incomplete") {
                             Column {
                                 Text(when {

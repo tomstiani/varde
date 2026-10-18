@@ -17,6 +17,7 @@ var errorStatuses = map[string]int{
 	"invalid_json":        http.StatusBadRequest,
 	"invalid_arguments":   http.StatusBadRequest,
 	"invalid_cursor":      http.StatusBadRequest,
+	"sync_reset_required": http.StatusConflict,
 	"invalid_field":       http.StatusUnprocessableEntity,
 	"backlog_full":        http.StatusServiceUnavailable,
 	"storage_unavailable": http.StatusServiceUnavailable,

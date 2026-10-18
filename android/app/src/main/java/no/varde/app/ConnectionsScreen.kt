@@ -14,9 +14,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import no.varde.app.inbox.InboxState
+import no.varde.app.inbox.Problem
 
 @Composable
-fun ConnectionsScreen(state: InboxState, onBack: () -> Unit, onAdd: () -> Unit, onEdit: (String) -> Unit, tools: @Composable () -> Unit = {}) {
+fun ConnectionsScreen(state: InboxState, onBack: () -> Unit, onAdd: () -> Unit, onEdit: (String) -> Unit,
+    tools: @Composable () -> Unit = {}, recoveryProblems: Map<String, Problem> = emptyMap(), onRecoveryRetry: (String) -> Unit = {}) {
     Scaffold { padding ->
         Column(Modifier.fillMaxSize().padding(padding).padding(16.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             TextButton(onClick = onBack) { Text("Back") }
@@ -26,6 +28,10 @@ fun ConnectionsScreen(state: InboxState, onBack: () -> Unit, onAdd: () -> Unit, 
                 Text(connection.name)
                 Text(connection.baseUrl.toString())
                 state.problems[connection.id]?.let { Text(it.explanation) }
+                recoveryProblems[connection.id]?.let {
+                    Text("Alert recovery: ${it.explanation}")
+                    TextButton(onClick = { onRecoveryRetry(connection.id) }) { Text("Retry recovery ${connection.name}") }
+                }
                 TextButton(onClick = { onEdit(connection.id) }, enabled = !state.saving) {
                     Text("Edit ${connection.name}")
                 }

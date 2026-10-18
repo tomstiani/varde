@@ -11,6 +11,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import no.varde.app.inbox.Inbox
+import no.varde.app.inbox.sameAccess
+import no.varde.app.inbox.Problem
 import no.varde.app.notifications.NotificationDestination
 
 @Composable
@@ -19,12 +21,20 @@ fun VardeApp(
     notification: NotificationDestination? = null,
     onNotificationHandled: () -> Unit = {},
     notificationTools: @Composable () -> Unit = {},
+    recoveryProblems: Map<String, Problem> = emptyMap(),
+    onRecoveryRetry: (String) -> Unit = {},
 ) {
     val state by inbox.state.collectAsStateWithLifecycle()
     val navigation = rememberNavController()
     LaunchedEffect(notification) {
         notification?.let {
-            if (inbox.openNotification(it.key, it.connection)) navigation.navigate("detail") { launchSingleTop = true }
+            val key = it.key
+            if (key != null) {
+                if (inbox.openNotification(key, it.connection)) navigation.navigate("detail") { launchSingleTop = true }
+            } else if (state.connection(it.connection.id)?.sameAccess(it.connection) == true) {
+                inbox.refresh()
+                navigation.navigate("inbox") { popUpTo("inbox"); launchSingleTop = true }
+            }
             onNotificationHandled()
         }
     }
@@ -42,14 +52,16 @@ fun VardeApp(
                             navigation.navigate("detail")
                         },
                         onRetryConnection = inbox::retryConnection,
-                        onEditConnection = editConnection)
+                        onEditConnection = editConnection,
+                        recoveryProblems = recoveryProblems)
                 }
                 composable("settings") {
                     ConnectionsScreen(state,
                         onBack = { navigation.popBackStack() },
                         onAdd = addConnection,
                         onEdit = editConnection,
-                        tools = notificationTools)
+                        tools = notificationTools,
+                        recoveryProblems = recoveryProblems, onRecoveryRetry = onRecoveryRetry)
                 }
                 composable("connection/{id}") { entry ->
                     val id = entry.arguments?.getString("id")?.takeUnless { it == "new" }

@@ -14,6 +14,26 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class NotificationOutputTest {
+    @Test fun catchUpKeepsTheCountPrivateAndHasAnImmutableInboxTarget() {
+        val instrumentation=InstrumentationRegistry.getInstrumentation()
+        val context=instrumentation.targetContext
+        if (Build.VERSION.SDK_INT>=33) instrumentation.uiAutomation.grantRuntimePermission(context.packageName,Manifest.permission.POST_NOTIFICATIONS)
+        val output=AndroidNotificationOutput(context)
+        val manager=context.getSystemService(NotificationManager::class.java)
+        val target="f".repeat(32)
+        try {
+            output.catchUp(CatchUpNotice(target,"Home",3),true)
+            val deadline=android.os.SystemClock.elapsedRealtime()+3_000
+            while (!output.active(target) && android.os.SystemClock.elapsedRealtime()<deadline) android.os.SystemClock.sleep(20)
+            val notification=manager.activeNotifications.single { it.tag=="varde.alert.$target" }.notification
+            assertEquals("3 new alerts from Home",notification.extras.getCharSequence(Notification.EXTRA_TITLE).toString())
+            assertEquals("New alerts from Home",notification.publicVersion.extras.getCharSequence(Notification.EXTRA_TITLE).toString())
+            assertEquals(Notification.VISIBILITY_PRIVATE,notification.visibility)
+            if (Build.VERSION.SDK_INT>=31) assertTrue(notification.contentIntent.isImmutable)
+            assertEquals(target,NotificationIntents.openTarget(NotificationIntents.open(context,target)))
+        } finally { output.cancel(target) }
+    }
+
     @Test fun coordinatorEnrichesAnImmediateReadThroughRealAndroidOutput() = kotlinx.coroutines.runBlocking {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val context = instrumentation.targetContext
