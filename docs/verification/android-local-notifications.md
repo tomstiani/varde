@@ -12,6 +12,15 @@ Issue #20's local synthetic signal path was exercised without Firebase, homelab 
 
 The navigation test uses an isolated app-private directory and process-local debug runtime fixture. It does not replace the user's encrypted connection file or contact a live endpoint. Managed connected tests ran only on the dedicated emulator, not the previously configured physical phone.
 
+## Independent review
+
+Two read-only reviewers inspected the committed implementation range `b751307...0c0ced2` along separate axes:
+
+- **Standards:** no documented violations. One advisory possible Divergent Change smell in the coordinator; retain the cohesive lifecycle ownership for this slice and consider extraction only if complexity grows.
+- **Spec:** no missing, incorrect or unrequested behaviour found within #20. Both reviewers accepted the local-only scope and the distinction between automated evidence and live provider/device verification.
+
+No blocking findings or code changes resulted from review. The earlier review-preparation helper exceeded its output limit; both reviewers instead read the exact pinned diff from a local artifact.
+
 ## Limits
 
 - No real FCM send/receipt, physical-phone notification observation, denied-permission system-dialog automation, power-management guarantee or actual killed-process restart was demonstrated. JVM tests reopen the persisted journal to exercise process-recreation semantics; platform navigation starts a fresh activity and checks activity recreation.
