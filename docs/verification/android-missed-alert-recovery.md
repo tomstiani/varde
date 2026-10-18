@@ -12,6 +12,15 @@ Issue #21 was exercised with synthetic data and no homelab, Google credentials, 
 
 The navigation test uses the activity ViewModel's public notification entry point for an already-open activity. Actual notification-output tests verify immutable explicit OS intents separately. Starting another instrumentation task through a PendingIntent was not used as a substitute for a real phone tap; no physical-device notification behaviour is claimed.
 
+## Independent review
+
+Separate read-only Standards and Spec reviewers inspected the committed range `f9ae5d3...7a751c6` using its complete pinned diff artifact.
+
+- **Standards:** no documented violations. One advisory possible duplication in recovery-status presentation across inbox/settings; the screens intentionally offer different navigation/retry actions, so no extraction is needed for this slice.
+- **Spec:** no missing, incorrect or unrequested behaviour found within #21. The reviewer confirmed foreground recovery, per-request authentication, fixed horizons, durable progress and the absence of archive/body prefetch.
+
+No blocking findings or code changes resulted from review.
+
 ## Retained boundaries
 
 Recovery is triggered by activity start or explicit retry, not a background worker. It has a finite four-page budget per connection; incomplete passes retain counts/cursors and expose a continuation action. Automatic insertion into an active history snapshot, original-body prefetch and offline original storage are not implemented.
