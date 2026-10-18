@@ -22,7 +22,7 @@ docs/      Shared architecture, research, and operational documentation
 
 Run Go commands from `backend/` and Gradle commands from `android/` using its checked-in wrapper. There is no root Go module or workspace, and no shared runtime library.
 
-See [coding standards](CODING_STANDARDS.md) for the human-readability and package-organization conventions.
+See [coding standards](CODING_STANDARDS.md) for the human-readability and package-organization conventions. [Pull-request verification](docs/how-to/check-ci.md) describes the automated checks and failure reports.
 
 ## Why
 

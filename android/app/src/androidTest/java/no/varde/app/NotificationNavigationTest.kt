@@ -5,6 +5,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.core.app.ActivityScenario
 import androidx.test.platform.app.InstrumentationRegistry
 import kotlinx.coroutines.runBlocking
@@ -48,9 +49,9 @@ class NotificationNavigationTest {
                 unavailable = false
                 compose.onNodeWithText("Retry detail").performClick()
                 compose.waitUntil(5_000) { compose.onAllNodes(androidx.compose.ui.test.hasText("Unchanged original")).fetchSemanticsNodes().isNotEmpty() }
-                compose.onNodeWithText("Unchanged original").assertIsDisplayed()
+                compose.onNodeWithText("Unchanged original").performScrollTo().assertIsDisplayed()
                 scenario.recreate()
-                compose.onNodeWithText("Unchanged original").assertIsDisplayed()
+                compose.onNodeWithText("Unchanged original").performScrollTo().assertIsDisplayed()
             }
             runBlocking {
                 val runtime = NotificationRuntime.get(context)
