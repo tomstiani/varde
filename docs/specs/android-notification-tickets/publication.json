@@ -1,0 +1,68 @@
+{
+  "repository": "tomstiani/varde",
+  "parent": {
+    "number": 19,
+    "url": "https://github.com/tomstiani/varde/issues/19"
+  },
+  "tickets": [
+    {
+      "order": 1,
+      "file": "01-local-notification-path.md",
+      "title": "Local Android notification path with silent enrichment",
+      "number": 20,
+      "url": "https://github.com/tomstiani/varde/issues/20",
+      "blockedBy": []
+    },
+    {
+      "order": 2,
+      "file": "02-missed-alert-recovery.md",
+      "title": "Recover missed alerts with per-connection catch-up",
+      "number": 21,
+      "url": "https://github.com/tomstiani/varde/issues/21",
+      "blockedBy": [
+        20
+      ]
+    },
+    {
+      "order": 3,
+      "file": "03-registration-and-controls.md",
+      "title": "Register delivery and manage notification controls",
+      "number": 22,
+      "url": "https://github.com/tomstiani/varde/issues/22",
+      "blockedBy": [
+        21
+      ]
+    },
+    {
+      "order": 4,
+      "file": "04-fcm-adapters.md",
+      "title": "Deliver minimal alert signals through replaceable FCM adapters",
+      "number": 23,
+      "url": "https://github.com/tomstiani/varde/issues/23",
+      "blockedBy": [
+        22
+      ]
+    },
+    {
+      "order": 5,
+      "file": "05-background-recovery.md",
+      "title": "Recover missed alerts in bounded Android background work",
+      "number": 24,
+      "url": "https://github.com/tomstiani/varde/issues/24",
+      "blockedBy": [
+        22
+      ]
+    },
+    {
+      "order": 6,
+      "file": "06-integrated-verification.md",
+      "title": "Verify and document the complete notification experience",
+      "number": 25,
+      "url": "https://github.com/tomstiani/varde/issues/25",
+      "blockedBy": [
+        23,
+        24
+      ]
+    }
+  ]
+}

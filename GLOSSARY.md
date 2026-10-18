@@ -21,6 +21,12 @@ A named association between the Android app and a homelab backend. Each alert di
 **Inbox**:
 The combined list of alerts from the Android app's saved connections, with each alert labelled by its source connection.
 
+**Alert notification**:
+A phone notification announcing an individual alert from a connection. It may initially identify only the connection while the alert's details are unavailable.
+
+**Catch-up notification**:
+A single phone notification announcing alerts discovered during recovery after missed delivery, rather than a separate notification for every recovered alert.
+
 **Network path**:
 The user-selected means by which the app reaches the homelab backend, such as Pangolin, Tailscale, or the public internet.
 
