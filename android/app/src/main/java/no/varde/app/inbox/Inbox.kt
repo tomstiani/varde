@@ -180,11 +180,18 @@ class Inbox(
 
     fun open(key: AlertKey) = openDetail(key, retry = false)
 
+    fun openNotification(key: AlertKey, expectedConnection: Connection): Boolean {
+        val connection = state.value.connection(key.connectionId) ?: return false
+        if (!connection.sameAccess(expectedConnection)) return false
+        openDetail(key, retry = false, requireRow = false)
+        return true
+    }
+
     fun retryDetail() { state.value.detail?.key?.let { openDetail(it, retry = true) } }
 
-    private fun openDetail(key: AlertKey, retry: Boolean) {
+    private fun openDetail(key: AlertKey, retry: Boolean, requireRow: Boolean = true) {
         val connection = state.value.connection(key.connectionId) ?: return
-        if (state.value.items.none { it.key == key } && state.value.detail?.key != key) return
+        if (requireRow && state.value.items.none { it.key == key } && state.value.detail?.key != key) return
         detailJob?.cancel()
         val requestRevision = ++detailRevision
         val retained = loadedDetails[key]

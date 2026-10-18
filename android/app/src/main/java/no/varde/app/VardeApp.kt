@@ -5,16 +5,29 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import no.varde.app.inbox.Inbox
+import no.varde.app.notifications.NotificationDestination
 
 @Composable
-fun VardeApp(inbox: Inbox) {
+fun VardeApp(
+    inbox: Inbox,
+    notification: NotificationDestination? = null,
+    onNotificationHandled: () -> Unit = {},
+    notificationTools: @Composable () -> Unit = {},
+) {
     val state by inbox.state.collectAsStateWithLifecycle()
     val navigation = rememberNavController()
+    LaunchedEffect(notification) {
+        notification?.let {
+            if (inbox.openNotification(it.key, it.connection)) navigation.navigate("detail") { launchSingleTop = true }
+            onNotificationHandled()
+        }
+    }
     val addConnection = { inbox.beginConnectionEdit(); navigation.navigate("connection/new") }
     val editConnection = { id: String -> inbox.beginConnectionEdit(); navigation.navigate("connection/$id") }
     MaterialTheme {
@@ -35,7 +48,8 @@ fun VardeApp(inbox: Inbox) {
                     ConnectionsScreen(state,
                         onBack = { navigation.popBackStack() },
                         onAdd = addConnection,
-                        onEdit = editConnection)
+                        onEdit = editConnection,
+                        tools = notificationTools)
                 }
                 composable("connection/{id}") { entry ->
                     val id = entry.arguments?.getString("id")?.takeUnless { it == "new" }

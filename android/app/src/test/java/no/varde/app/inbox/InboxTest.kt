@@ -32,6 +32,30 @@ class InboxTest {
         assertEquals(2, backend.historyCalls)
     }
 
+    @Test fun notificationOpensAnUnloadedAlertAndOffersRetryWithoutInventingContent() = runTest {
+        var unavailable = true
+        val backend = object : Backend {
+            override suspend fun history(connection: Connection, cursor: String?) = HistoryPage(emptyList())
+            override suspend fun read(connection: Connection, id: String): AlertDetail {
+                if (unavailable) throw InboxFailure(Problem.NETWORK)
+                return AlertDetail(row, "Original summary")
+            }
+        }
+        val inbox = Inbox(this, MemorySettings(listOf(connection)), backend)
+        runCurrent()
+        assertTrue(inbox.openNotification(key, connection))
+        runCurrent()
+        assertEquals(key, inbox.state.value.detail?.key)
+        assertNull(inbox.state.value.detail?.alert)
+        assertEquals(Problem.NETWORK, inbox.state.value.detail?.problem)
+        unavailable = false
+        inbox.retryDetail()
+        runCurrent()
+        assertEquals("Original summary", inbox.state.value.detail?.alert?.summary)
+        val replacement = Connection.create("Other", "https://other.example", "other-token", connection.id)
+        assertFalse(inbox.openNotification(key, replacement))
+    }
+
     @Test fun failedRefreshRetainsDisplayedContentAsStale() = runTest {
         val backend = FakeBackend(row)
         val inbox = Inbox(this, MemorySettings(listOf(connection)), backend)
