@@ -16,7 +16,7 @@ import androidx.compose.ui.unit.dp
 import no.varde.app.inbox.InboxState
 
 @Composable
-fun ConnectionsScreen(state: InboxState, onBack: () -> Unit, onAdd: () -> Unit, onEdit: (String) -> Unit) {
+fun ConnectionsScreen(state: InboxState, onBack: () -> Unit, onAdd: () -> Unit, onEdit: (String) -> Unit, tools: @Composable () -> Unit = {}) {
     Scaffold { padding ->
         Column(Modifier.fillMaxSize().padding(padding).padding(16.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             TextButton(onClick = onBack) { Text("Back") }
@@ -30,6 +30,7 @@ fun ConnectionsScreen(state: InboxState, onBack: () -> Unit, onAdd: () -> Unit, 
                     Text("Edit ${connection.name}")
                 }
             }
+            tools()
         }
     }
 }
