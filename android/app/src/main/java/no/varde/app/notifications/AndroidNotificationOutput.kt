@@ -33,20 +33,42 @@ class AndroidNotificationOutput(private val context: Context) : NotificationOutp
         manager.notify(tag(notice.targetId), 1, notification.build())
     }
 
+    override fun catchUp(notice: CatchUpNotice, interrupt: Boolean) {
+        if (!enabled()) return
+        val notification = Notification.Builder(context, CHANNEL)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentTitle(catchUpTitle(notice.source, notice.count))
+            .setContentText("Open Varde to view recovered alerts.")
+            .setSubText(notice.source)
+            .setVisibility(Notification.VISIBILITY_PRIVATE)
+            .setPublicVersion(publicVersion(notice.source, plural = true))
+            .setOnlyAlertOnce(!interrupt)
+            .setAutoCancel(true)
+            .setContentIntent(NotificationIntents.content(context, notice.targetId))
+            .setDeleteIntent(NotificationIntents.dismissal(context, notice.targetId))
+        notification.extras.putBoolean("varde.catchup", true)
+        notification.extras.putInt("varde.count", notice.count)
+        manager.notify(tag(notice.targetId), 1, notification.build())
+    }
+
     override fun active(targetId: String): Boolean = manager.activeNotifications.any { it.tag == tag(targetId) && it.id == 1 }
     override fun cancel(targetId: String) { manager.cancel(tag(targetId), 1) }
 
     override fun rename(targetId: String, source: String) {
         val current = manager.activeNotifications.firstOrNull { it.tag == tag(targetId) && it.id == 1 } ?: return
+        val catchUp = current.notification.extras.getBoolean("varde.catchup")
         val builder = Notification.Builder.recoverBuilder(context, current.notification)
-            .setSubText(source).setPublicVersion(publicVersion(source)).setOnlyAlertOnce(true)
-        if (current.notification.extras.getBoolean("varde.generic")) builder.setContentTitle("New alert from $source")
+            .setSubText(source).setPublicVersion(publicVersion(source, plural = catchUp)).setOnlyAlertOnce(true)
+        if (catchUp) builder.setContentTitle(catchUpTitle(source, current.notification.extras.getInt("varde.count")))
+        else if (current.notification.extras.getBoolean("varde.generic")) builder.setContentTitle("New alert from $source")
         manager.notify(tag(targetId), 1, builder.build())
     }
 
-    private fun publicVersion(source: String): Notification = Notification.Builder(context, CHANNEL)
+    private fun catchUpTitle(source: String, count: Int) = "$count new ${if (count == 1) "alert" else "alerts"} from $source"
+
+    private fun publicVersion(source: String, plural: Boolean = false): Notification = Notification.Builder(context, CHANNEL)
         .setSmallIcon(android.R.drawable.ic_dialog_info)
-        .setContentTitle("New alert from $source")
+        .setContentTitle("New ${if (plural) "alerts" else "alert"} from $source")
         .setContentText("Unlock to view alert details.")
         .build()
 

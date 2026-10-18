@@ -19,9 +19,11 @@ func (e *Failure) Error() string { return e.Category }
 func (e *Failure) Message() string {
 	switch e.Category {
 	case "invalid_arguments":
-		return "Supply valid, non-repeated history parameters."
+		return "Supply valid, non-repeated request parameters."
 	case "invalid_cursor":
-		return "The history cursor is invalid for this request; refresh history."
+		return "The cursor is invalid for this request; initialize a new read session."
+	case "sync_reset_required":
+		return "The change checkpoint is no longer available; initialize recovery again."
 	case "unauthorized":
 		return "A valid bearer credential is required."
 	case "forbidden":

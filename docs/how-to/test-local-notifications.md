@@ -2,7 +2,7 @@
 
 Exercise the first notification slice without Firebase, your homelab, n8n or a physical phone. The debug app can simulate an incoming signal for a saved connection, then use the normal backend transport to fetch the original.
 
-**Scope:** issue #20 only. This does not implement provider registration, FCM, change recovery, background delivery or notification toggles. A simulated signal is not evidence of genuine push delivery.
+**Scope:** the synthetic signal path from issue #20. [App-opening change recovery and catch-up](recover-alerts.md) now coexist with it but are a separate path. Provider registration, FCM, background delivery and notification toggles are not implemented. A simulated signal is not evidence of genuine push delivery.
 
 ## Automated local verification
 
