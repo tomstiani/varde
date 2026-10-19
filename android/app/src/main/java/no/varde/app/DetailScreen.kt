@@ -43,6 +43,7 @@ fun DetailScreen(state: InboxState, onBack: () -> Unit, onRetry: () -> Unit, onS
                         Text(alert.row.title)
                         Text("Priority: ${alert.row.priority}")
                         Text("Event: ${eventTime(alert.row.observedAt)}")
+                        RichContent(alert.richComponents)
                         Text("Summary")
                         Text(alert.summary)
                     }

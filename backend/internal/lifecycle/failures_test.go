@@ -21,7 +21,7 @@ func TestSubmissionExplainsValidationFailuresSafely(t *testing.T) {
 		{"summary", strings.Repeat("x", 8193), "summary must be a string of at most 8,192 characters."},
 		{"priority", "PRIVATE-INPUT", "priority must be low, normal, high, or critical."},
 		{"observedAt", "PRIVATE-INPUT", "observedAt must be an RFC 3339 timestamp with an explicit offset."},
-		{"data", []any{"PRIVATE-INPUT"}, "This increment accepts only omitted data or an empty array."},
+		{"data", "PRIVATE-INPUT", "data must be an array of at most 8 standalone measurements; samples, records and sequences are not supported yet."},
 	}
 	for _, test := range cases {
 		t.Run(test.field, func(t *testing.T) {

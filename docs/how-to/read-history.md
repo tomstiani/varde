@@ -32,7 +32,7 @@ An example path is `/v1/alerts?order=acceptedAt&limit=50`. Do not put credential
 }
 ```
 
-An empty inbox returns `items: []` and `nextCursor: null`. Summary pages exclude the original summary, sender event ID and private diagnostics. Fetch the full original on demand with `GET /v1/alerts/{alertId}`.
+An empty inbox returns `items: []` and `nextCursor: null`. Summary pages exclude the original summary, sender event ID, private diagnostics and rich-view bodies. Presentation is pending revision 0 or terminal rich/fallback revision 1. Fetch the full original and any rich view on demand with `GET /v1/alerts/{alertId}`. The [current metric rollout](submit-supplied-metric.md) demonstrates rich publication with test-only selections; production still finishes as original-text fallback.
 
 ## Continue without gaps
 
@@ -41,7 +41,7 @@ An empty inbox returns `items: []` and `nextCursor: null`. Summary pages exclude
 3. Stop when `nextCursor` is null. This means that snapshot has ended, not that no new alerts have arrived.
 4. Omit the cursor to refresh. New acceptances are included only in the fresh snapshot.
 
-The watermark fixes membership while presentation revisions are current at each read. A detail request can show a newer fallback revision than its row. Pagination does not hold a transaction open across requests or implement change sync.
+The watermark fixes membership while presentation revisions are current at each read. A detail request can show a newer terminal rich or fallback revision than its row. Backend and Android use one current contract and coordinated upgrades, without negotiation or legacy projections. Pagination does not hold a transaction open across requests or implement change sync.
 
 Cursor tokens are integrity-protected and bound to a store, order and limit. They survive ordinary backend restarts, but every continuation still requires a current credential. Revocation blocks continuation. Tokens do not work against a separately initialized database. There is no guarantee across restoring an older backup; supported backup/restore and general rollback detection remain unimplemented. The separate [change-recovery contract](recover-alerts.md) detects only some positively invalidated positions, not arbitrary restored copies.
 

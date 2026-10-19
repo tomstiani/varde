@@ -1,6 +1,6 @@
 # Varde backend
 
-Go + standard `net/http` + SQLite. The implemented slices support authenticated plain-text submission, retained originals, duplicate recovery, restart-safe text fallback, and snapshot-paginated history reads. The fallback worker recovers from temporary SQLite contention without restarting the backend; HTTP requests remain bounded and diagnostics cannot block processing.
+Go + standard `net/http` + SQLite. The implemented slices support authenticated plain-text and standalone-measurement submission, retained originals, exact-decimal duplicate recovery, restart-safe text fallback, and snapshot-paginated history reads. [Metric rollout and read/render contracts](../docs/how-to/submit-supplied-metric.md) are verified with test-only selections; production generation is not implemented. The fallback worker recovers from temporary SQLite contention without restarting the backend; HTTP requests remain bounded and diagnostics cannot block processing.
 
 From this directory:
 

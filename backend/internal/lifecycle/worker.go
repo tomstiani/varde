@@ -3,6 +3,7 @@ package lifecycle
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"time"
 )
@@ -47,6 +48,11 @@ func (s *Lifecycle) Run(ctx context.Context, events chan<- WorkerEvent) error {
 }
 
 func (s *Lifecycle) completeNext(ctx context.Context) (bool, error) {
+	return s.completeNextSelection(ctx, nil)
+}
+
+// Only tests supply selectors: they run under the publication transaction, never provider I/O.
+func (s *Lifecycle) completeNextSelection(ctx context.Context, selectCandidates func([]Candidate) map[string]string) (bool, error) {
 	completed := false
 	err := s.transaction(ctx, func(conn *sql.Conn) error {
 		var id string
@@ -57,7 +63,31 @@ func (s *Lifecycle) completeNext(ctx context.Context) (bool, error) {
 		if err != nil {
 			return err
 		}
-		if _, err = conn.ExecContext(ctx, `UPDATE alerts SET state='fallback',revision=1,category='model_not_configured' WHERE id=? AND state='pending'`, id); err != nil {
+		alert, err := readAlert(ctx, conn, id)
+		if err != nil {
+			return err
+		}
+		state, category := "fallback", "model_not_configured"
+		var view *RichView
+		if selectCandidates != nil {
+			candidates := prepareCandidates(alert.Original)
+			if len(candidates) == 0 {
+				category = "no_useful_data"
+			} else {
+				view, category = selectRichView(candidates, selectCandidates(candidates))
+			}
+			if view != nil {
+				state = "rich"
+			}
+		}
+		var encoded []byte
+		if view != nil {
+			encoded, err = json.Marshal(view)
+			if err != nil {
+				return err
+			}
+		}
+		if _, err = conn.ExecContext(ctx, `UPDATE alerts SET state=?,revision=1,category=?,rich_view=? WHERE id=? AND state='pending'`, state, category, encoded, id); err != nil {
 			return err
 		}
 		if _, err = conn.ExecContext(ctx, "UPDATE work SET finished=1 WHERE alert_id=?", id); err != nil {

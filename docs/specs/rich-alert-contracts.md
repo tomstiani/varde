@@ -2,6 +2,8 @@
 
 **Status: user-approved contracts, published in [#39](https://github.com/tomstiani/varde/issues/39) and delivered under explicit closure approval on 2026-10-19.** Parent [#38](https://github.com/tomstiani/varde/issues/38) and affected child criteria were reconciled to the single-current-contract decision. The field-level requirements below are approved; the live evaluation remains separately authorization-gated. This is contract delivery, not implemented rich views, provider-call authorization or production enablement. GitHub remains canonical for subsequent implementation progress.
 
+**Approved staged rollout for #40:** accept standalone measurements and exact summary text; reject samples/history, records and sequences before acceptance until #43–#45 implement them. Do not silently discard unsupported input. See [the metric rollout reference](../how-to/submit-supplied-metric.md). The full grammar below remains the approved destination contract.
+
 The [feature specification](typed-rich-alert-views.md) describes the user stories and approved testing seams. The [synthetic fixtures](rich-alert-contracts/fixtures.json) illustrate the approved contract. No real alerts, keys or model calls were used.
 
 ## 1. One current wire contract; no backward support

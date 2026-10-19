@@ -21,6 +21,9 @@ var pushSchema string
 //go:embed push_work_schema.sql
 var pushWorkSchema string
 
+//go:embed rich_schema.sql
+var richSchema string
+
 func Open(path string) (*Lifecycle, error) {
 	if path == "" || path == ":memory:" {
 		return nil, failure("invalid_database_path")
@@ -80,18 +83,33 @@ func databaseURL(path string) string {
 	return u.String()
 }
 
-func (s *Lifecycle) initializeSchema(ctx context.Context) error {
+func (s *Lifecycle) initializeSchema(ctx context.Context) (result error) {
+	// SQLite requires foreign keys disabled outside the transaction when rebuilding a referenced table.
+	if _, err := s.db.ExecContext(ctx, "PRAGMA foreign_keys=OFF"); err != nil {
+		return err
+	}
+	defer func() {
+		cleanup, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if _, err := s.db.ExecContext(cleanup, "PRAGMA foreign_keys=ON"); err != nil && result == nil {
+			result = err
+		}
+	}()
 	return s.transaction(ctx, func(conn *sql.Conn) error {
 		var version int
 		if err := conn.QueryRowContext(ctx, "PRAGMA user_version").Scan(&version); err != nil {
 			return err
 		}
 		switch version {
-		case 4:
+		case 5:
 			return nil
+		case 4:
+			return migrateRichViews(ctx, conn)
 		case 3:
-			_, err := conn.ExecContext(ctx, pushWorkSchema)
-			return err
+			if _, err := conn.ExecContext(ctx, pushWorkSchema); err != nil {
+				return err
+			}
+			return migrateRichViews(ctx, conn)
 		case 2:
 		case 1:
 			if err := migrateHistory(ctx, conn); err != nil {
@@ -110,7 +128,9 @@ func (s *Lifecycle) initializeSchema(ctx context.Context) error {
 		if _, err := conn.ExecContext(ctx, pushSchema); err != nil {
 			return err
 		}
-		_, err := conn.ExecContext(ctx, pushWorkSchema)
-		return err
+		if _, err := conn.ExecContext(ctx, pushWorkSchema); err != nil {
+			return err
+		}
+		return migrateRichViews(ctx, conn)
 	})
 }
