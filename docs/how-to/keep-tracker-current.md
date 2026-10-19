@@ -54,9 +54,9 @@ This audit is deliberately separate from required PR checks: a PR's closing targ
 
 ## Require successful CI on main
 
-`.github/main-ci-ruleset.json` is a proposed policy, not evidence that protection is active. It requires PRs and all four existing GitHub Actions checks, with an up-to-date branch and no bypass actors. It requires no extra human approval count, so a solo maintainer can still merge after the checks pass. The check source is the observed GitHub Actions app (integration ID `15368`).
+The repository's `main-required-ci` ruleset (ID `25381768`) is active for `main`, verified through the read-only GitHub ruleset API. It requires PRs and all four existing GitHub Actions checks, with an up-to-date branch and no bypass actors. It requires no extra human approval count, so a solo maintainer can still merge after the checks pass. The check source is the observed GitHub Actions app (integration ID `15368`).
 
-Applying this policy is a separate approved repository-settings operation:
+`.github/main-ci-ruleset.json` is the reviewed policy template, not a mechanism that activates protection by being committed. Recheck live rules before any settings operation; do not create another copy of the active ruleset. Applying this policy elsewhere is a separate approved repository-settings operation:
 
 ```sh
 gh api repos/tomstiani/varde/rulesets

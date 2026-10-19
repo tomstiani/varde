@@ -2,7 +2,7 @@
 
 Varde will use one application and SQLite to accept alerts durably, generate validated rich views, and serve a native Android app. Push is a best-effort hint; authenticated reads and change sync are authoritative.
 
-**Status:** architecture baseline, not a claim that the complete release is implemented. The Go/`net/http`/SQLite foundation (#9), snapshot history/inbox (#12–#15), local notification path (#20), and foreground recovery (#21) are merged. See [backend setup](../how-to/run-backend.md) and [recovery](../how-to/recover-alerts.md) for implemented Interfaces. Model execution and remote push scheduling/registration remain proposed. [The approved notification specification](../specs/android-alert-notifications.md) selects replaceable FCM delivery and acceptance-triggered generic notifications; #22–#25 implement and verify the remaining delivery path.
+**Status:** architecture baseline, not a claim that the complete release is implemented. The Go/`net/http`/SQLite foundation (#9), snapshot history/inbox (#12–#15), local notification path (#20), foreground recovery (#21), and registration/controls with durable fake-provider scheduling (#22) are merged. See [backend setup](../how-to/run-backend.md), [registration](../how-to/register-push.md), [controls](../how-to/control-notifications.md) and [recovery](../how-to/recover-alerts.md) for implemented Interfaces. Model execution, real FCM Adapters (#23), background recovery (#24) and integrated live acceptance (#25) remain separate. The ordinary backend provider and Android token source are unconfigured; automated fake-provider evidence is not live delivery.
 
 ## Scope
 
@@ -14,7 +14,7 @@ The first release retains original alerts and generated rich views indefinitely.
 
 ### Alert lifecycle module
 
-**Interface:** submit an authenticated original alert; read an alert; page retained history; read changes using a server-issued cursor. Administrative credential operations are available through a local operator command, not sender/device access.
+**Interface:** submit an authenticated original alert; read an alert; page retained history; read changes using a server-issued cursor; manage the calling installation's own push registration. Administrative credential operations are available through a local operator command, not sender/device access.
 
 The interface includes durable-acceptance guarantees, duplicate behavior, limits, permission rules, cursor recovery, and asynchronous presentation status. A successful submission does not promise a successful provider call or delivered notification.
 
@@ -36,11 +36,11 @@ The lifecycle scheduler must observe each paid step separately. Do not retry an 
 
 ### Push adapter
 
-**Interface:** submit a notification hint for one installation and report success, a transient failure, or a permanent failure.
+**Interface:** submit a notification hint for one installation and report success, transient failure, permanent destination failure, or provider-wide configuration failure.
 
 The lifecycle implementation owns durable scheduling and retry accounting. The adapter hides provider details, not canonical alert history. Device credentials may register, replace, or remove only their own push destination.
 
-The approved policy schedules a minimal hint after durable acceptance, without waiting for terminal presentation or future rich-view generation. Android immediately posts a generic source-labelled notification, then fetches original text and silently enriches it. FCM is the first provider behind replaceable Adapters; the proposed envelope contains only a version, registration routing ID and alert ID. The local path is implemented in #20; real registration, durable provider dispatch and FCM delivery remain #22/#23 work. See the [notification specification](../specs/android-alert-notifications.md) for the full delivery/privacy contract.
+The approved policy schedules a minimal hint after durable acceptance, without waiting for terminal presentation or future rich-view generation. Android immediately posts a generic source-labelled notification, then fetches original text and silently enriches it. The implemented provider-neutral envelope contains only a version, registration routing ID and alert ID. The local path is implemented in #20; #22 adds registration, durable scheduling and an injected fake send Adapter. The selected real FCM Adapters remain #23 work. See the [notification specification](../specs/android-alert-notifications.md) for the full delivery/privacy contract.
 
 ### Seam discipline
 
@@ -205,6 +205,14 @@ Use deterministic clocks and fault injection alongside real temporary SQLite dat
 
 The plain-text fallback worker retries known SQLite `BUSY` contention with capped jittered backoff and no attempt limit. Fatal or uncertain-cleanup failures still stop the backend. This storage-recovery policy is separate from the bounded paid-step retry policy above; it does not implement paid execution. The HTTP adapter owns a five-second request budget, while the application writes bounded best-effort stderr diagnostics. See the [worker recovery contract](../specs/backend-worker-recovery.md) and [operator guide](../how-to/run-backend.md). Large-archive migration execution policy, supported backup/restore and full production operations remain deferred. [Initial Linux Compose packaging](../how-to/run-compose.md) is available without changing the loopback-only listener.
 
+## Implemented registration and delivery scheduling
+
+[PR #31](https://github.com/tomstiani/varde/pull/31) adds installation-only conditional registration with private destinations, quoted ETags, persisted idempotency and retired-session fencing. A new session captures its silent change baseline in the registration transaction; token refresh and destination repair preserve its existing baseline and Android recovery cursor.
+
+Acceptance atomically inserts eligible push work with the original alert and acceptance change. Dispatch reserves attempts durably, rechecks the current registration and its credential, and sends outside SQLite transactions and HTTP ingress. The budget is one initial attempt plus three bounded retries. Permanent destination failures disable only that destination; provider-wide configuration failures establish a shared cooldown rather than invalidating phone tokens. Revocation, replacement and removal invalidate obsolete work.
+
+The ordinary server has no live provider wired in. [The reproducible demo](../how-to/test-push-delivery.md) injects a deterministic fake and synthetic destinations; no production callback URL or live send is introduced. [Verification](../verification/android-notification-controls.md) records backend, real-Go Android transport, emulator and hosted-CI evidence separately from unverified physical-phone/FCM delivery. SQLite schema version four and Android journal version three require protected, consistent backups before upgrading important data; old binaries cannot simply consume those formats.
+
 ## Evidence, alternatives, and deferred choices
 
 The [FOSS lifecycle comparison](../research/foss-alert-lifecycle-efe0c387-2704-4893-9ca3-71cfde044a47.md) found that ntfy and Gotify offer delivery infrastructure, while DBOS offers durable execution. None supplies the agreed Varde lifecycle in full. SQLite-owned work records avoid an extra deployment dependency while the workflow remains small. Revisit this choice if real implementation complexity warrants it.
@@ -213,11 +221,11 @@ The [retained experiment findings](../research/alert-view-experiments.md) suppor
 
 Deferred deliberately:
 
-- HTTP interfaces beyond plain-text submission, snapshot history and bounded change recovery, including typed-data schemas and push destination registration.
-- Implementation of the selected replaceable FCM delivery path, registration/controls, durable provider scheduling and background Android recovery; its timing/privacy policy is already approved in #19.
+- Typed-data and rich-view HTTP schemas beyond the implemented plain-text, history, change-recovery and installation-registration contracts.
+- Real FCM send/registration/receive Adapters and background Android scheduling; their timing/privacy policy is approved in #19. Registration/controls and durable provider-neutral scheduling are implemented, not deferred.
 - Production model configuration, optional reasoning adoption, and promotion of the tested relevance prompt.
 - Paid-execution transport deadlines, prepared-request/context limits, and shutdown/claim mechanics. The implemented HTTP request budget and fallback-worker recovery do not settle these provider-call policies.
-- Background change scheduling and remote push registration. The implemented foreground recovery wire contract is documented in the [recovery guide](../how-to/recover-alerts.md); original alert content still remains memory-only on Android.
-- Large-archive migration execution policy, supported backup/restore commands, and deployment packaging. The transactional SQLite v1 → v2 history migration is implemented; its fixed startup budget remains unchanged.
+- Background change scheduling and integrated live notification acceptance. The implemented foreground recovery and registration contracts are documented in the [recovery](../how-to/recover-alerts.md) and [registration](../how-to/register-push.md) guides; original alert content remains memory-only on Android.
+- Large-archive migration execution policy, supported backup/restore commands and full production operations. Initial Linux Compose packaging and transactional upgrades through SQLite schema version four are implemented; the fixed startup budget remains unchanged.
 
-These choices must preserve the confirmed contracts above. The first implementation increment in issue #9 covers authenticated plain-text acceptance, retained original reads, and restart-safe no-model fallback. Issue #12 adds authenticated snapshot history reads and the first Kotlin/Compose inbox; issue #13 adds named connections and Android-side merging, issue #14 adds snapshot-preserving older-history browsing, and issue #15 adds explicit failed-source recovery and retained in-memory details. Canonical per-backend history retains acceptance-sequence order; the explicit `acceptedAt` history view supports Android's timestamp-ordered feed without rewriting timestamps when clocks move backwards. See the [history contract](../how-to/read-history.md) and [approved inbox specification](../specs/android-combined-inbox.md). Issue #21 adds authenticated checkpoint/change reads and durable foreground catch-up, reusing the existing ledger and persisted cursor key without another schema migration. Typed data, resumable paid generation, remote push registration and delivery, and background recovery are still later increments. Two-backend real-Go transport tests and physical-phone USB setup/browsing are verified. Original remote phone HTTPS/n8n acceptance and the complete live-phone lifecycle demonstration in issue #16 remain deferred; see the [verification record](../verification/android-usb-acceptance.md).
+These choices must preserve the confirmed contracts above. The first implementation increment in issue #9 covers authenticated plain-text acceptance, retained original reads, and restart-safe no-model fallback. Issue #12 adds authenticated snapshot history reads and the first Kotlin/Compose inbox; issue #13 adds named connections and Android-side merging, issue #14 adds snapshot-preserving older-history browsing, and issue #15 adds explicit failed-source recovery and retained in-memory details. Canonical per-backend history retains acceptance-sequence order; the explicit `acceptedAt` history view supports Android's timestamp-ordered feed without rewriting timestamps when clocks move backwards. See the [history contract](../how-to/read-history.md) and [approved inbox specification](../specs/android-combined-inbox.md). Issue #21 adds authenticated checkpoint/change reads and durable foreground catch-up, reusing the existing ledger and persisted cursor key without another schema migration. Issue #22 adds conditional registration, durable fake-provider scheduling and Android controls in PR #31. Typed data, resumable paid generation, real FCM delivery and background recovery remain later increments. Two-backend real-Go transport tests and physical-phone USB setup/browsing are verified. Original remote phone HTTPS/n8n acceptance and the complete live-phone lifecycle demonstration in issue #16 remain deferred; see the [verification record](../verification/android-usb-acceptance.md).

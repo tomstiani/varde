@@ -48,7 +48,7 @@ A debug synthetic session is stored locally and reused across app process restar
 
 Notifications have private lock-screen visibility and a generic public version containing only the connection name. Device/user settings can impose or override visibility; verify the target device rather than promising universal lock-screen behaviour. The app retains its screen-capture protection.
 
-Only minimal notification metadata is persisted in the app's private, backup-excluded directory: session/connection identifiers, access fingerprints, alert/notification identities and dispositions. It stores no original titles, summaries or raw credentials. Existing credentials remain in Keystore-encrypted settings. OS notifications can retain their displayed content under Android's own controls; this is not an app-level offline archive.
+Only notification metadata is persisted in the app's private, backup-excluded directory: preferences, session/connection identifiers, access fingerprints, alert/notification identities, dispositions and recovery cursors. Configured registration also stores private destinations and pending mutation metadata. It stores no original titles, summaries or backend bearer credentials. Existing credentials remain in Keystore-encrypted settings. OS notifications can retain their displayed content under Android's own controls; this is not an app-level offline archive.
 
 The journal uses atomic replacement, syncs file contents before replacing, and fails closed on unreadable/unsupported metadata or its 8 MiB safety limit. It does not silently erase records or prune them on a timer and risk announcing delayed duplicates. This first slice is not an unlimited-size notification archive or a general backup/durability guarantee.
 

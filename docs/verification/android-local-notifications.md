@@ -2,7 +2,7 @@
 
 ## Verified scope
 
-Issue #20's local synthetic signal path was delivered in [PR #26](https://github.com/tomstiani/varde/pull/26) and exercised without Firebase, homelab access, n8n or a physical phone. [PR #27](https://github.com/tomstiani/varde/pull/27) hardened its UI assertion for smaller screens. Counts below describe this slice's original run; later [foreground recovery](android-missed-alert-recovery.md) has separate evidence. This is not observed provider delivery or background recovery.
+Issue #20's local synthetic signal path was delivered in [PR #26](https://github.com/tomstiani/varde/pull/26) and exercised without Firebase, homelab access, n8n or a physical phone. [PR #27](https://github.com/tomstiani/varde/pull/27) hardened its UI assertion for smaller screens. Counts and limits below describe this slice's original run; later [foreground recovery](android-missed-alert-recovery.md) and [registration/controls](android-notification-controls.md) have separate evidence. This historical record is not a current feature inventory. This is not observed provider delivery or background recovery.
 
 - **53 debug JVM tests and 53 release JVM tests passed**, including coordinator tests using real temporary metadata files, delayed/failing reads, duplicate/restart handling, dismissal, permission suppression, stale access, session/source isolation, uncertain output and asynchronous OS publication.
 - **2 real-Go transport/inbox tests passed**, retaining actual temporary SQLite databases and test-only HTTPS proxies. This slice does not add a provider or change-stream endpoint.

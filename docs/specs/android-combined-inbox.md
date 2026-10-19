@@ -2,7 +2,7 @@
 
 **Status:** approved and published as [issue #11](https://github.com/tomstiani/varde/issues/11). Core implementation tickets #12–#15 are delivered in [PR #17](https://github.com/tomstiani/varde/pull/17). The original remote HTTPS/n8n and complete live-phone lifecycle acceptance are tracked in [#16](https://github.com/tomstiani/varde/issues/16). GitHub owns live issue state and acceptance checkboxes.
 
-**Later increments:** [PR #26](https://github.com/tomstiani/varde/pull/26) adds local notifications and [PR #28](https://github.com/tomstiani/varde/pull/28) adds foreground change recovery under [spec #19](android-alert-notifications.md). The original problem statement, scope and acceptance contract below are retained as this milestone's planning record; they are not a current feature inventory.
+**Later increments:** [PR #26](https://github.com/tomstiani/varde/pull/26) adds local notifications, [PR #28](https://github.com/tomstiani/varde/pull/28) adds foreground change recovery, and [PR #31](https://github.com/tomstiani/varde/pull/31) adds registration/controls and durable fake-provider scheduling under [spec #19](android-alert-notifications.md). The original problem statement, scope and acceptance contract below are retained as this milestone's planning record; they are not a current feature inventory.
 
 **Context:** follows the durable backend increment in issue #9 / merged PR #10 and advances map #1 without completing its rich-view or notification release. The original planning baseline was commit `19ec01a`, including the leap-second validation fix. That foundation and this inbox are now integrated; the earlier squash-merge landing prerequisite is no longer pending.
 
