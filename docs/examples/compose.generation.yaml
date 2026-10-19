@@ -1,0 +1,12 @@
+services:
+  varde:
+    command: ["serve", "-listen", "127.0.0.1:${VARDE_PORT:-8080}", "-generation-config", "/run/varde-generation.json"]
+    volumes:
+      - type: bind
+        source: ${VARDE_GENERATION_CONFIG:?Select an absolute nonsecret configuration file}
+        target: /run/varde-generation.json
+        read_only: true
+      - type: bind
+        source: ${VARDE_GENERATION_KEY_FILE:?Select an absolute runtime key file}
+        target: /run/secrets/jev-api-key
+        read_only: true

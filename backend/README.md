@@ -12,7 +12,7 @@ go test -race ./...
 go run ./cmd/varde-demo
 ```
 
-See [local setup and HTTP reference](../docs/how-to/run-backend.md) for prerequisites, credential commands, and current limits. See [backend architecture](../docs/architecture/backend.md) for the wider design.
+See [local setup and HTTP reference](../docs/how-to/run-backend.md) for prerequisites, credential commands, and current limits. [Local Jev configuration](../docs/how-to/configure-generation.md) supports offline checks and restart activation only; provider execution is not implemented and all alerts still use original-text fallback. See [backend architecture](../docs/architecture/backend.md) for the wider design.
 
 ## Code map
 

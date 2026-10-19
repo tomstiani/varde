@@ -21,6 +21,9 @@ var pushSchema string
 //go:embed push_work_schema.sql
 var pushWorkSchema string
 
+//go:embed generation_schema.sql
+var generationSchema string
+
 func Open(path string) (*Lifecycle, error) {
 	if path == "" || path == ":memory:" {
 		return nil, failure("invalid_database_path")
@@ -87,10 +90,16 @@ func (s *Lifecycle) initializeSchema(ctx context.Context) error {
 			return err
 		}
 		switch version {
-		case 4:
+		case 5:
 			return nil
+		case 4:
+			_, err := conn.ExecContext(ctx, generationSchema)
+			return err
 		case 3:
-			_, err := conn.ExecContext(ctx, pushWorkSchema)
+			if _, err := conn.ExecContext(ctx, pushWorkSchema); err != nil {
+				return err
+			}
+			_, err := conn.ExecContext(ctx, generationSchema)
 			return err
 		case 2:
 		case 1:
@@ -110,7 +119,10 @@ func (s *Lifecycle) initializeSchema(ctx context.Context) error {
 		if _, err := conn.ExecContext(ctx, pushSchema); err != nil {
 			return err
 		}
-		_, err := conn.ExecContext(ctx, pushWorkSchema)
+		if _, err := conn.ExecContext(ctx, pushWorkSchema); err != nil {
+			return err
+		}
+		_, err := conn.ExecContext(ctx, generationSchema)
 		return err
 	})
 }

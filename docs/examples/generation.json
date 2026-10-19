@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "enabled": true,
+  "configId": "jev-project-1",
+  "accountRef": "operator-project",
+  "model": "jev-1.13.0",
+  "apiKeyFile": "/run/secrets/jev-api-key"
+}
