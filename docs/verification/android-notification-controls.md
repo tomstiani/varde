@@ -35,3 +35,25 @@ New emulator UI/output tests exercise source controls, pending/active/muted stat
 The ordinary token source is deliberately unconfigured. Enabled connections show activation pending until an Adapter supplies a token. Synthetic injected tokens in tests do not configure Google, send FCM, prove receipt, or establish human-visible delivery. No production callback URL or injection endpoint was added.
 
 This work does not observe physical-device notification behavior, real provider delivery, background scheduling, force-stop recovery, deployed HTTPS/n8n, or hosted CI execution for this branch. #23 and #24 remain downstream work; the independent #11/#16 gates are not waived. No Google provisioning, secret upload, homelab deployment, paid call, GitHub publication, issue closure or merge occurred. Independent code review and GitHub acceptance reconciliation are not claimed by these test results.
+
+## Token-repair follow-up
+
+Review of checkpoint `d20fd1a` found a P1: permanent destination failure advanced the backend ETag, and token refresh could retire the local session after `412`, replacing its recovery cursor with a fresh baseline and silencing eligible acceptances. A failing coordinator regression reproduced one expected catch-up alert as zero.
+
+The fix reloads current registration state for new mutations and acknowledged reconnects, preserves the current baseline/cursor during destination repair, and uses a fresh mutation key after an explicitly rejected precondition changes. Already-bound uncertain requests still replay unchanged before observing a newer version. A genuinely retired ID remains fenced. Mutation attempts stay bounded at two per call, with further reconciliation persisted for later retry.
+
+Seven dedicated coordinator tests cover changed/unchanged token repair, concurrent version advance, explicit removal, a lost acknowledgement across restart, a precondition-read outage across restart, and bounded repeated races. A real HTTPS/Go test verifies same-session server version changes, unrecovered acceptance, unchanged-token reconciliation, backend restart and explicit removal. The original external minimal reproduction also passed afterward; its temporary harness was removed in favor of the retained tests.
+
+Follow-up results, separate from the initial counts above:
+
+| Check | Result |
+| --- | --- |
+| Debug JVM tests | 86 passed, no skips |
+| Release JVM tests | 86 passed, no skips |
+| Real-Go HTTPS tests | 8 passed, no skips |
+| Debug/release lint and builds | Passed |
+| Full emulator suite | 27 tests, 25 passed, same 2 conditional skips, no failures |
+| Fresh-install denial-dialog fixture alone | 1 passed, no skips |
+| Backend tests, race tests, vet and fake-provider demo | Passed |
+
+An independent, read-only Spec reviewer rechecked the fix and its immediate blast radius and reported no findings, confirming that the prior P1 is resolved by source inspection. The reviewer did not execute tests; the parent ran the commands above. This is scoped fix-review evidence, not a new verdict on every #22 acceptance criterion or on deferred live delivery. The fix was uncommitted at verification time; no publication, issue mutation or live push occurred.

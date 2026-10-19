@@ -15,7 +15,8 @@ internal fun readRegistration(json: JSONObject): RegistrationState {
         it.removalComplete = json.getBoolean("removalComplete")
         require(it.baseline == null || it.baseline!!.matches(Regex("[A-Za-z0-9_.-]{1,2048}")))
         require(it.key == null || it.key!!.matches(Regex("[0-9a-f]{32}")))
-        require(!it.ready || (it.baseline != null && it.version != null))
+        // A queued token update may still be waiting to read its precondition.
+        require(!it.ready || (it.baseline != null && (it.version != null || it.key != null)))
         require((it.provider == null) == (it.destination == null))
         if (it.provider != null) PushDestination("0".repeat(32), it.provider!!, it.destination!!)
         require(it.key == null || it.destination != null)

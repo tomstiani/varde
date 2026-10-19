@@ -137,7 +137,7 @@ class NotificationCoordinator(
 
     private fun retireSession(session: NotificationSession) {
         session.retired = true
-        session.registration?.let { it.key = null; it.provider = null; it.destination = null }
+        session.registration?.let { it.ready = false; it.key = null; it.provider = null; it.destination = null }
     }
 
     private fun cancelSession(state: NotificationState, session: NotificationSession) {
@@ -150,7 +150,7 @@ class NotificationCoordinator(
 
     suspend fun register(connectionId: String, token: PushToken?) = registrationLocks.getOrPut(connectionId) { Mutex() }.withLock {
         repeat(2) {
-            val request = locked {
+            var request = locked {
                 val connections = settings.load()
                 val state = journal.load()
                 reconcile(state, connections)
@@ -167,24 +167,28 @@ class NotificationCoordinator(
                 }
                 val remote = session.registration!!
                 if (remote.key == null) {
-                    if (token == null || (remote.ready && remote.provider == token.provider && remote.destination == token.destination)) {
+                    if (token == null) {
                         journal.save(state)
                         publishControls(state)
                         return@locked null
                     }
-                    PushDestination(session.registrationId, token.provider, token.destination)
-                    remote.provider = token.provider
-                    remote.destination = token.destination
-                    remote.key = randomIdentifier()
+                    if (!remote.ready || remote.provider != token.provider || remote.destination != token.destination) {
+                        PushDestination(session.registrationId, token.provider, token.destination)
+                        remote.provider = token.provider
+                        remote.destination = token.destination
+                        remote.key = randomIdentifier()
+                        remote.version = null
+                    }
                 }
                 journal.save(state)
                 replacedFixture?.let { cancelSession(state, it) }
                 publishControls(state)
-                RegistrationRequest(connection, session.registrationId, remote.key!!, remote.version,
-                    PushDestination(session.registrationId, remote.provider!!, remote.destination!!))
+                RegistrationRequest(connection, session.registrationId, remote.key, remote.version,
+                    PushDestination(session.registrationId, remote.provider!!, remote.destination!!), remote.baseline)
             } ?: return@withLock
             try {
-                val version = request.version ?: backend.pushRegistration(request.connection).version
+                request = reconcileRegistration(request) ?: return@withLock
+                val version = request.version!!
                 val current = locked {
                     val state = journal.load()
                     reconcile(state, settings.load())
@@ -196,7 +200,13 @@ class NotificationCoordinator(
                     true
                 }
                 if (!current) return@withLock
-                val result = backend.putPush(request.connection, PushMutation(version, request.key), request.destination)
+                val result = try {
+                    backend.putPush(request.connection, PushMutation(version, request.key!!), request.destination)
+                } catch (failure: InboxFailure) {
+                    if (failure.problem != Problem.REGISTRATION_CHANGED) throw failure
+                    reconcileRegistration(request, rejected = true) ?: return@withLock
+                    return@repeat
+                }
                 val applied = locked {
                     val state = journal.load()
                     reconcile(state, settings.load())
@@ -219,6 +229,7 @@ class NotificationCoordinator(
                     removeRegistration(request.connection, request.registrationId)
                     return@withLock
                 }
+                if (token == null || (request.destination.provider == token.provider && request.destination.destination == token.destination)) return@withLock
             } catch (failure: InboxFailure) {
                 locked {
                     val state = journal.load()
@@ -239,8 +250,39 @@ class NotificationCoordinator(
         }
     }
 
-    private class RegistrationRequest(val connection: Connection, val registrationId: String, val key: String,
-        val version: Long?, val destination: PushDestination)
+    private suspend fun reconcileRegistration(request: RegistrationRequest, rejected: Boolean = false): RegistrationRequest? {
+        // A bound, uncertain mutation must replay before observing a newer precondition.
+        if (!rejected && request.key != null && request.version != null) return request
+        val current = backend.pushRegistration(request.connection)
+        if (request.baseline != null && current.enabled) {
+            if (current.registrationId != request.registrationId) throw InboxFailure(Problem.REGISTRATION_CHANGED)
+            if (current.baselineCursor != request.baseline) throw InboxFailure(Problem.RECOVERY_CURSOR)
+        }
+        // Rejection at the observed current version fences a genuinely retired session ID.
+        if (rejected && current.version == request.version) throw InboxFailure(Problem.REGISTRATION_CHANGED)
+        return locked {
+            val state = journal.load()
+            reconcile(state, settings.load())
+            val session = state.sessions.firstOrNull { it.registrationId == request.registrationId && !it.retired } ?: return@locked null
+            val remote = session.registration!!
+            if (session.connectionId in locallyMuted || !output.enabled() || remote.key != request.key) return@locked null
+            if (!rejected && request.key == null && current.enabled && current.version == request.version) {
+                registrationProblems -= session.connectionId
+                publishControls(state)
+                return@locked null
+            }
+            if (!current.enabled) remote.ready = false
+            remote.key = if (rejected || request.key == null) randomIdentifier() else request.key
+            remote.version = current.version
+            if (rejected) registrationProblems[session.connectionId] = Problem.REGISTRATION_CHANGED
+            journal.save(state)
+            publishControls(state)
+            RegistrationRequest(request.connection, request.registrationId, remote.key, remote.version, request.destination, request.baseline)
+        }
+    }
+
+    private class RegistrationRequest(val connection: Connection, val registrationId: String, val key: String?,
+        val version: Long?, val destination: PushDestination, val baseline: String?)
 
     private fun publishControls(state: NotificationState) {
         mutableNotificationControls.value = state.preferences.associate { preference ->

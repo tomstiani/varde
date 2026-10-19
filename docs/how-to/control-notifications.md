@@ -29,7 +29,9 @@ A rename preserves source identity and silently updates active labels; it does n
 
 URL or credential replacement retires the previous access generation and creates a new silent context. Cleanup uses the previous trusted connection and credential in memory, not the replacement endpoint. Old responses and signals cannot become notifications attributed to the new access context. Ordinary token refresh and reconnect preserve the current session and recovery position.
 
-An incoming signal before registration acknowledgement cannot fetch details, post output or advance recovery. Once the baseline is acknowledged, recovery covers eligible acceptances during setup. Uncertain registration retries reuse the persisted mutation key, content and precondition; refresh does not replace the original baseline.
+An incoming signal before registration acknowledgement cannot fetch details, post output or advance recovery. Once the baseline is acknowledged, recovery covers eligible acceptances during setup. Uncertain registration retries reuse the persisted mutation key, content and precondition before reading newer backend state; refresh does not replace the original baseline.
+
+Acknowledged-session reconnects read the current registration even when the SDK token is unchanged. A healthy unchanged registration needs no PUT. A disabled destination or changed ETag is reconciled under the existing session, baseline and recovery cursor. After an explicit `412`, a changed version is retried with a fresh idempotency key. A different active session, or rejection of the old ID at the observed current version, retires local eligibility instead of reviving a removed session. Each call makes at most two mutation attempts; further version races remain pending for a later retry.
 
 ## Storage and development fixtures
 

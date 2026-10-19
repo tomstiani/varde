@@ -113,6 +113,62 @@ class GoNotificationControlsTest {
         }
     }
 
+    @Test fun serverVersionChangesPreserveRecoveryButExplicitRemovalFencesTheOldSession() = runBlocking {
+        val backendDirectory = File(requireNotNull(System.getProperty("varde.backend.dir")))
+        val metadata = Files.createTempDirectory("varde-token-repair-test-").toFile()
+        val certificate = HeldCertificate.Builder().addSubjectAlternativeName("localhost").build()
+        val trust = HandshakeCertificates.Builder().addTrustedCertificate(certificate.certificate).build()
+        val http = OkHttpClient.Builder().sslSocketFactory(trust.sslSocketFactory(), trust.trustManager).build()
+        try {
+            GoBackendFixture(backendDirectory).use { fixture ->
+                GoTlsProxy(fixture, certificate).use { proxy ->
+                    val connection = proxy.connection("Home", fixture.installationSecret, "home")
+                    val backend: Backend = HttpBackend(http)
+                    val output = Output()
+                    val coordinator = NotificationCoordinator(Settings(listOf(connection)), backend, metadata, output)
+                    coordinator.prepareNotifications()
+                    coordinator.register("home", PushToken("fcm", "synthetic-token-a"))
+                    val original = backend.pushRegistration(connection)
+                    val registrationId = requireNotNull(original.registrationId)
+                    fixture.submit(1)
+                    coordinator.recover("home")
+                    fixture.submit(2)
+                    backend.putPush(connection, PushMutation(original.version, "a".repeat(32)),
+                        PushDestination(registrationId, "fcm", "synthetic-server-token"))
+                    val replacement = PushToken("fcm", "synthetic-token-b")
+                    coordinator.register("home", replacement)
+                    coordinator.recover("home")
+                    assertEquals(listOf(1, 1), output.summaries.map { it.count })
+                    assertTrue(registrationId == coordinator.currentRegistration("home"))
+                    val repaired = backend.pushRegistration(connection)
+                    assertEquals(original.baselineCursor, repaired.baselineCursor)
+                    val serverChange = backend.putPush(connection, PushMutation(repaired.version, "b".repeat(32)),
+                        PushDestination(registrationId, "fcm", "synthetic-other-server-token"))
+                    coordinator.register("home", replacement)
+                    val reasserted = backend.pushRegistration(connection)
+                    assertEquals(serverChange.version + 1, reasserted.version)
+                    assertEquals(original.baselineCursor, reasserted.baselineCursor)
+                    fixture.restart()
+                    coordinator.register("home", replacement)
+                    assertEquals(reasserted.version, backend.pushRegistration(connection).version)
+                    backend.deletePush(connection, PushMutation(reasserted.version, "c".repeat(32)))
+                    coordinator.register("home", replacement)
+                    assertFalse(backend.pushRegistration(connection).enabled)
+                    assertNull(coordinator.currentRegistration("home"))
+                    assertEquals(Problem.REGISTRATION_CHANGED, coordinator.notificationControls.value["home"]?.problem)
+                    coordinator.register("home", replacement)
+                    assertTrue(registrationId != coordinator.currentRegistration("home"))
+                    coordinator.recover("home")
+                    assertEquals(listOf(1, 1), output.summaries.map { it.count })
+                }
+            }
+        } finally {
+            http.dispatcher.executorService.shutdown()
+            http.connectionPool.evictAll()
+            metadata.deleteRecursively()
+        }
+    }
+
     private class Settings(var connections: List<Connection>) : ConnectionSettings {
         override suspend fun load() = connections
         override suspend fun save(connections: List<Connection>) { this.connections = connections }
