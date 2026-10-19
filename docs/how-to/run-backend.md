@@ -1,8 +1,8 @@
-# Run the first backend slice locally
+# Run the backend locally
 
-Build and test authenticated alert acceptance, original retrieval, duplicate recovery, and restart-safe text fallback. This implements the foundation in [issue #9](https://github.com/tomstiani/varde/issues/9), not the full Android release. For a Linux container deployment behind your existing Pangolin site, use [Docker Compose setup](run-compose.md).
+Build and test authenticated alert acceptance, original retrieval, duplicate recovery, restart-safe text fallback, and durable fake-provider delivery. This includes the foundation in [issue #9](https://github.com/tomstiani/varde/issues/9) and registration/scheduling from [#22](https://github.com/tomstiani/varde/issues/22), not the full Android release. For a Linux container deployment behind your existing Pangolin site, use [Docker Compose setup](run-compose.md).
 
-**Current limits:** plain-text alerts only; no typed measurements, rich generation, paid model requests or push. [Authenticated change checkpoints and bounded recovery reads](recover-alerts.md) support app-opening missed-alert recovery. [Public history pagination](read-history.md) and a [named-connection Android inbox](../../android/README.md) are implemented, including older-history browsing and explicit partial-outage recovery. Two-backend transport tests and physical-phone USB setup/browsing are verified; original remote phone HTTPS/n8n acceptance remains deferred. See the [verification record](../verification/android-usb-acceptance.md). The executable accepts only literal loopback listen addresses. The [Linux Compose setup](run-compose.md) preserves that loopback restriction and uses an operator-managed HTTPS path; it does not provide a non-loopback listener.
+**Current limits:** plain-text alerts only; no typed measurements, rich generation, paid model requests or live push provider. [Installation registration](register-push.md), [Android notification controls](control-notifications.md) and [injected fake-provider scheduling](test-push-delivery.md) are implemented. The ordinary backend provider and Android token source remain unconfigured, so enabled Android connections show activation pending until a token source is supplied. [Authenticated change checkpoints and bounded recovery reads](recover-alerts.md) support app-opening missed-alert recovery. [Public history pagination](read-history.md) and a [named-connection Android inbox](../../android/README.md) are implemented, including older-history browsing and explicit partial-outage recovery. Two-backend transport tests and physical-phone USB setup/browsing are verified; original remote phone HTTPS/n8n acceptance remains deferred. See the [verification record](../verification/android-usb-acceptance.md). The executable accepts only literal loopback listen addresses. The [Linux Compose setup](run-compose.md) preserves that loopback restriction and uses an operator-managed HTTPS path; it does not provide a non-loopback listener.
 
 ## Prerequisites
 
@@ -18,7 +18,7 @@ cd backend
 
 Tests and the demonstration use synthetic alerts and local temporary databases, not your homelab records. Build outputs and the default data directory are relative to `backend/`.
 
-## Verify the slice
+## Verify locally
 
 ```sh
 go mod download
@@ -28,12 +28,12 @@ go test -race ./...
 go run ./cmd/varde-demo
 ```
 
-After dependencies are downloaded, ordinary tests and the demonstration need no external network access or provider credentials. The demonstration builds a temporary executable, issues credentials into memory, starts the backend on an ephemeral loopback port, submits an alert, restarts the process, retrieves the original, and resolves a duplicate. It verifies terminal text fallback and removes its temporary database afterward.
+After dependencies are downloaded, ordinary tests and the demonstration need no external network access or provider credentials. The demonstration builds a temporary executable, issues credentials into memory, starts the backend on an ephemeral loopback port, submits an alert, restarts the process, retrieves the original, and resolves a duplicate. It verifies terminal text fallback, then uses a separate temporary database and authenticated loopback HTTP scenario to verify a silent registration baseline, durable enqueue, uncertain registration replay and deterministic fake-provider retry. It removes its temporary databases afterward; no external push is sent.
 
 Expected final line:
 
 ```text
-Verified: credential issuance, durable acceptance, restart, original retrieval, duplicate recovery, and text fallback.
+Verified: credential issuance, durable acceptance, restart, original retrieval, duplicate recovery, text fallback, and fake-provider push registration/retry. No live push was sent.
 ```
 
 The tests also kill a subprocess immediately before and after the acceptance commit, reject a real failed SQLite commit, and exercise concurrent duplicate/capacity checks across independent database connections. These checks prove process-crash recovery with intact storage, not protection against disk loss or every power-failure scenario.
@@ -64,7 +64,7 @@ Replace `CREDENTIAL_ID` with the issuance record's credential ID:
 ./bin/varde -db data/varde.sqlite credential revoke CREDENTIAL_ID
 ```
 
-Revocation is idempotent for an existing credential. An unknown credential ID returns `not_found`. Revocation does not delete originals, sender identity, or accepted processing. Other credentials for that identity remain usable.
+Revocation is idempotent for an existing credential. An unknown credential ID returns `not_found`. Revocation does not delete originals, sender identity, or accepted processing. Queued push work bound to the revoked registration credential is invalidated. Other credentials for that identity remain usable; they do not automatically inherit queued delivery. See [registration and credential binding](register-push.md).
 
 ## Start and stop the backend
 
@@ -120,7 +120,7 @@ Reject unknown fields, duplicate JSON object keys, invalid encoding, and incorre
 
 A new alert returns `201`. The response contains `id`, `acceptedAt`, `original`, and `presentation`. Presentation initially has `state: "pending"` and `revision: 0`; the worker completes it as `state: "fallback"` and `revision: 1`. The fallback reason is stored internally as `model_not_configured`, not exposed as a private diagnostic record to installations.
 
-`GET /v1/alerts/{alertId}` requires an **installation** bearer credential. It returns the same representation and remains usable while processing is pending. An installation reads all alerts in this homelab; a sender cannot read them. This increment has no push destination management. Installations can also [page history summaries](read-history.md); full originals remain loaded on demand.
+`GET /v1/alerts/{alertId}` requires an **installation** bearer credential. It returns the same representation and remains usable while processing is pending. An installation reads all alerts in this homelab; a sender cannot read them. Installations can also [manage their own push registration](register-push.md) and [page history summaries](read-history.md); full originals remain loaded on demand.
 
 Identical submissions under the same sender/event identity return `200` and the existing ID. Changed content returns `409`, even when capacity is full. Formatting and object-key ordering do not affect comparison; omitted `data` equals `[]`. Revoking or replacing credentials does not reset the sender's event-ID history.
 
@@ -152,6 +152,6 @@ Diagnostics are bounded and best-effort: a stalled or failed stderr sink cannot 
 
 New data directories use mode `0700`; new database files use `0600`. Existing database files readable by other users are rejected. Existing directory permissions are not automatically changed: the operator must keep the containing directory private. SQLite uses WAL journaling, `synchronous=FULL`, foreign keys, and a one-second lock wait.
 
-The new binary transactionally upgrades version-one stores for history ordering and durable cursor metadata. Stop older backend processes before upgrading, and do not use old binaries to write upgraded stores. Migration preserves originals, credentials, pending work and change records. Failure rolls back the upgrade rather than starting with partial schema changes. Take a consistent backup before upgrading important data.
+The binary transactionally upgrades earlier stores through schema version four: history ordering/cursor metadata, registration/session history, delivery work and provider cooldown state. Stop older backend processes before upgrading, and do not use old binaries to write upgraded stores. Originals, credentials, pending fallback work and change order are retained. Development version-three destinations lack credential binding and are retired rather than assigned an inferred credential; establish a new silent session after upgrade. Failure rolls back the upgrade rather than starting with partial schema changes. Take a consistent private backup before upgrading important data.
 
-Do not copy a live `.sqlite` file alone: committed records can still reside in its WAL. Supported backup/restore commands and sync-cursor invalidation are later work; this development increment is not an archival backup procedure. The acceptance guarantee assumes intact storage and working filesystem durability semantics.
+Do not copy a live `.sqlite` file alone: committed records can still reside in its WAL. The database contains private originals and destinations; keep any backup protected and out of ordinary diagnostic exports. Supported backup/restore commands and general rollback detection remain deferred. Change recovery detects some positively invalidated cursors, not arbitrary restored copies; see [recovery limits](recover-alerts.md). This increment is not an archival backup procedure. The acceptance guarantee assumes intact storage and working filesystem durability semantics.

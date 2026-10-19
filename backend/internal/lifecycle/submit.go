@@ -102,5 +102,13 @@ func insertPendingAlert(ctx context.Context, conn *sql.Conn, owner string, origi
 	if _, err = conn.ExecContext(ctx, "INSERT INTO changes(alert_id,revision) VALUES(?,0)", alert.ID); err != nil {
 		return Alert{}, err
 	}
+	if _, err := conn.ExecContext(ctx, `
+		INSERT INTO push_work(installation_id,registration_version,alert_id)
+		SELECT p.installation_id,p.version,?
+		FROM push_registrations p JOIN credentials c ON c.id=p.credential_id
+		WHERE p.registration_id IS NOT NULL AND p.destination IS NOT NULL AND c.revoked=0
+	`, alert.ID); err != nil {
+		return Alert{}, err
+	}
 	return alert, nil
 }

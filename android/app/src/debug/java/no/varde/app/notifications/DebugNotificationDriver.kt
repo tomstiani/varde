@@ -11,15 +11,15 @@ import no.varde.app.inbox.ConnectionSettings
 object DebugNotificationDriver {
     suspend fun signal(context: Context, connectionId: String, alertId: String) {
         val coordinator = NotificationRuntime.get(context).coordinator
-        val registration = coordinator.currentRegistration(connectionId) ?: UUID.randomUUID().toString().replace("-", "").also {
+        val registration = coordinator.currentRegistration(connectionId, includePending = false) ?: UUID.randomUUID().toString().replace("-", "").also {
             coordinator.activate(connectionId, it)
         }
         coordinator.receive(AlertSignal("1", registration, alertId))
     }
 
-    fun install(context: Context, settings: ConnectionSettings, backend: Backend, directory: File): Closeable {
+    fun install(context: Context, settings: ConnectionSettings, backend: Backend, directory: File, tokenSource: PushTokenSource? = null): Closeable {
         val previous = NotificationRuntime.instance
-        val runtime = NotificationRuntime(context, settings, backend, directory)
+        val runtime = NotificationRuntime(context, settings, backend, directory, tokenSource = tokenSource)
         NotificationRuntime.instance = runtime
         return Closeable {
             runtime.scope.cancel()

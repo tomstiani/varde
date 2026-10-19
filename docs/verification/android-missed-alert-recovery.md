@@ -1,5 +1,7 @@
 # Foreground missed-alert recovery verification
 
+**Historical scope:** counts and limits below describe PR #28, not the current feature inventory. [PR #31](https://github.com/tomstiani/varde/pull/31) adds registration, controls and durable fake-provider scheduling with a [separate verification record](android-notification-controls.md). The original observations are retained unchanged.
+
 ## Automated evidence
 
 Issue #21 was delivered in [PR #28](https://github.com/tomstiani/varde/pull/28), merged as `41309cd`. It was exercised with synthetic data and no homelab, Google credentials, paid calls or real push:

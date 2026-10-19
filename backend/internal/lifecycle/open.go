@@ -15,6 +15,12 @@ import (
 //go:embed schema.sql
 var schema string
 
+//go:embed push_schema.sql
+var pushSchema string
+
+//go:embed push_work_schema.sql
+var pushWorkSchema string
+
 func Open(path string) (*Lifecycle, error) {
 	if path == "" || path == ":memory:" {
 		return nil, failure("invalid_database_path")
@@ -81,17 +87,30 @@ func (s *Lifecycle) initializeSchema(ctx context.Context) error {
 			return err
 		}
 		switch version {
-		case 2:
+		case 4:
 			return nil
+		case 3:
+			_, err := conn.ExecContext(ctx, pushWorkSchema)
+			return err
+		case 2:
 		case 1:
-			return migrateHistory(ctx, conn)
+			if err := migrateHistory(ctx, conn); err != nil {
+				return err
+			}
 		case 0:
 			if _, err := conn.ExecContext(ctx, schema); err != nil {
 				return err
 			}
-			return migrateHistory(ctx, conn)
+			if err := migrateHistory(ctx, conn); err != nil {
+				return err
+			}
 		default:
 			return failure("unsupported_database_version")
 		}
+		if _, err := conn.ExecContext(ctx, pushSchema); err != nil {
+			return err
+		}
+		_, err := conn.ExecContext(ctx, pushWorkSchema)
+		return err
 	})
 }

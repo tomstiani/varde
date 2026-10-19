@@ -1,6 +1,6 @@
 # Run Varde with Docker Compose and Pangolin
 
-Run the plain-text backend on a Linux server and reach it through your existing Pangolin site. This is an initial homelab deployment, not a claim that remote HTTPS or n8n acceptance has passed. Push, AI-generated views, background recovery and supported backup tooling are not implemented. [Foreground change recovery](recover-alerts.md) is available when opening Android.
+Run the plain-text backend on a Linux server and reach it through your existing Pangolin site. This is an initial homelab deployment, not a claim that remote HTTPS or n8n acceptance has passed. Live push delivery, AI-generated views, background recovery and supported backup tooling are not implemented. [Installation registration](register-push.md) and durable delivery scheduling are implemented with a separate [injected fake-provider demonstration](test-push-delivery.md). The ordinary server provider and Android token source remain unconfigured; [notification controls](control-notifications.md) show activation pending rather than announcing an unknown backlog. Foreground recovery remains silent while muted or denied.
 
 ## Prerequisites
 
@@ -134,7 +134,7 @@ The `varde` Compose project keeps SQLite in its `varde-data` named volume. Use t
 docker compose -p varde down
 ```
 
-**Do not use `down --volumes` or delete/prune this volume unless you intend to erase alerts and credentials.** Do not copy a live SQLite file alone; committed data can be in its WAL. For a manual filesystem backup, stop Varde and copy the complete volume using your trusted backup process. Verify restoration separately. Built-in backup/restore tooling is not provided.
+**Do not use `down --volumes` or delete/prune this volume unless you intend to erase alerts and credentials.** Do not copy a live SQLite file alone; committed data can be in its WAL. For a manual filesystem backup, stop Varde and copy the complete volume using your trusted private backup process. The volume contains original alert content and private destinations; exclude it from ordinary diagnostic exports. Verify restoration separately. Built-in backup/restore tooling is not provided.
 
 Before updating, preserve a stopped-volume backup. Pull the intended revision, then rebuild:
 

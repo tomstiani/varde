@@ -36,7 +36,10 @@ func Run(out io.Writer) error {
 		return err
 	}
 
-	_, err = fmt.Fprintln(out, "Verified: credential issuance, durable acceptance, restart, original retrieval, duplicate recovery, and text fallback.")
+	if err = verifyFakePush(filepath.Join(directory, "push.sqlite")); err != nil {
+		return err
+	}
+	_, err = fmt.Fprintln(out, "Verified: credential issuance, durable acceptance, restart, original retrieval, duplicate recovery, text fallback, and fake-provider push registration/retry. No live push was sent.")
 	return err
 }
 

@@ -2,7 +2,7 @@
 
 Exercise the first notification slice without Firebase, your homelab, n8n or a physical phone. The debug app can simulate an incoming signal for a saved connection, then use the normal backend transport to fetch the original.
 
-**Scope:** the synthetic signal path from issue #20. [App-opening change recovery and catch-up](recover-alerts.md) now coexist with it but are a separate path. Provider registration, FCM, background delivery and notification toggles are not implemented. A simulated signal is not evidence of genuine push delivery.
+**Scope:** the synthetic signal path from issue #20. [App-opening change recovery and catch-up](recover-alerts.md) now coexist with it but are a separate path. [Registration and notification controls](control-notifications.md) are now implemented separately, with activation pending until a token source is configured. FCM and background delivery are not implemented. A simulated signal is not evidence of genuine push delivery.
 
 ## Automated local verification
 
@@ -35,20 +35,20 @@ Use only synthetic alerts and a dedicated debug installation. First configure a 
 
 1. Build/install the debug APK, then open Varde and load the synthetic inbox.
 2. Open **Settings** and find **Local notification test (debug only)**.
-3. Select **Android notification settings** and allow Varde's alert notifications. Permission denial leaves the inbox usable and does not trigger repeated permission prompts.
+3. Keep that connection's notification toggle on. Select **Android notification settings** and allow Varde's alert notifications. Permission denial leaves the inbox usable and does not trigger repeated permission prompts.
 4. Leave **Synthetic alert ID** blank to use the first already-loaded alert from each source. Alternatively, enter a known synthetic backend alert ID. The driver does not enumerate or download an archive.
 5. Select **Send local signal for <connection>**. Varde shows a generic source-labelled notification before fetching, then silently replaces it with the original title/summary. A fast local read can make the generic stage too brief to see by eye; delayed-read tests verify the order.
 6. Send the same signal again. It must not request another sound/vibration. Dismiss the notification, then repeat: it must not reappear. Use a different synthetic alert for another initial-notification demonstration.
 7. To test failure, make the synthetic backend unavailable before sending a signal for a different known alert. Tap the generic notification: Varde opens its source-specific detail screen, explains that content is unavailable, and offers **Retry detail**. Restore the backend and retry.
 8. Rename the source: active labels update silently. Removing or replacing access cancels its notifications and fences obsolete requests and taps. Other connections remain independent.
 
-A debug synthetic session is stored locally and reused across app process restarts. No destination is registered with a server or provider. The signal driver and its controls are absent from release builds; there is no exported injection receiver, deep-link injection endpoint or external debug HTTP service.
+A debug synthetic session is stored locally and reused across app process restarts. No synthetic destination is registered with a server or provider, and this local fixture cannot initialize automatic recovery. The signal driver and its controls are absent from release builds; there is no exported injection receiver, deep-link injection endpoint or external debug HTTP service.
 
 ## Privacy and persistence limits
 
 Notifications have private lock-screen visibility and a generic public version containing only the connection name. Device/user settings can impose or override visibility; verify the target device rather than promising universal lock-screen behaviour. The app retains its screen-capture protection.
 
-Only minimal notification metadata is persisted in the app's private, backup-excluded directory: session/connection identifiers, access fingerprints, alert/notification identities and dispositions. It stores no original titles, summaries or raw credentials. Existing credentials remain in Keystore-encrypted settings. OS notifications can retain their displayed content under Android's own controls; this is not an app-level offline archive.
+Only notification metadata is persisted in the app's private, backup-excluded directory: preferences, session/connection identifiers, access fingerprints, alert/notification identities, dispositions and recovery cursors. Configured registration also stores private destinations and pending mutation metadata. It stores no original titles, summaries or backend bearer credentials. Existing credentials remain in Keystore-encrypted settings. OS notifications can retain their displayed content under Android's own controls; this is not an app-level offline archive.
 
 The journal uses atomic replacement, syncs file contents before replacing, and fails closed on unreadable/unsupported metadata or its 8 MiB safety limit. It does not silently erase records or prune them on a timer and risk announcing delayed duplicates. This first slice is not an unlimited-size notification archive or a general backup/durability guarantee.
 

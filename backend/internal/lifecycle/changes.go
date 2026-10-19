@@ -29,21 +29,26 @@ func (s *Lifecycle) Checkpoint(ctx context.Context, token string) (Checkpoint, e
 		if _, err := authenticate(ctx, conn, token, Installation); err != nil {
 			return err
 		}
-		key, err := historyKey(ctx, conn)
-		if err != nil {
-			return err
-		}
-		var after int64
-		if err := conn.QueryRowContext(ctx, "SELECT COALESCE(MAX(seq),0) FROM changes").Scan(&after); err != nil {
-			return err
-		}
-		checkpoint.Cursor, err = encodeChangesCursor(changePosition{Version: 1, After: after}, key)
+		var err error
+		checkpoint.Cursor, err = currentChangeCheckpoint(ctx, conn)
 		return err
 	})
 	if err != nil {
 		return Checkpoint{}, safe(err)
 	}
 	return checkpoint, nil
+}
+
+func currentChangeCheckpoint(ctx context.Context, conn *sql.Conn) (string, error) {
+	key, err := historyKey(ctx, conn)
+	if err != nil {
+		return "", err
+	}
+	var after int64
+	if err := conn.QueryRowContext(ctx, "SELECT COALESCE(MAX(seq),0) FROM changes").Scan(&after); err != nil {
+		return "", err
+	}
+	return encodeChangesCursor(changePosition{Version: 1, After: after}, key)
 }
 
 func (s *Lifecycle) Changes(ctx context.Context, token string, query ChangesQuery) (ChangesPage, error) {
