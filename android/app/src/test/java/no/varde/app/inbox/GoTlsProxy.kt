@@ -28,7 +28,12 @@ internal class GoTlsProxy(fixture: GoBackendFixture, certificate: HeldCertificat
                 val upstream = fixture.address.newBuilder().encodedPath(incoming.encodedPath).encodedQuery(incoming.encodedQuery).build()
                 val forwarded = Request.Builder().url(upstream)
                     .header("Authorization", request.getHeader("Authorization").orEmpty())
-                    .method(request.method!!, if (request.method == "POST") request.body.readByteArray().toRequestBody() else null).build()
+                    .apply {
+                        for (name in listOf("If-Match", "Idempotency-Key", "Content-Type")) {
+                            request.getHeader(name)?.let { header(name, it) }
+                        }
+                    }
+                    .method(request.method!!, if (request.method in setOf("POST", "PUT")) request.body.readByteArray().toRequestBody() else null).build()
                 return try {
                     fixture.http.newCall(forwarded).execute().use { response ->
                         val body = response.body!!.string()
@@ -37,6 +42,7 @@ internal class GoTlsProxy(fixture: GoBackendFixture, certificate: HeldCertificat
                             pageSizes += JSONObject(body).getJSONArray("items").length()
                         }
                         MockResponse().setResponseCode(response.code).setHeader("Content-Type", "application/json").setBody(body)
+                            .apply { response.header("ETag")?.let { setHeader("ETag", it) } }
                     }
                 } catch (_: IOException) {
                     MockResponse().setResponseCode(503).setBody("""{"error":"upstream_unavailable"}""")

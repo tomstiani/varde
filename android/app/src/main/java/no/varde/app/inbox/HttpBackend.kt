@@ -7,6 +7,7 @@ import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Response
 import org.json.JSONObject
 import java.io.IOException
@@ -29,7 +30,7 @@ class HttpBackend(client: OkHttpClient = OkHttpClient()) : Backend {
             .addQueryParameter("order", "acceptedAt")
             .addQueryParameter("limit", "50")
             .apply { cursor?.let { addQueryParameter("cursor", it) } }.build()
-        return request(connection, url, history = true) { json ->
+        return request(connection, url, history = true) { json, _ ->
             val items = json.getJSONArray("items")
             require(items.length() <= 50)
             require(json.has("nextCursor") && (json.isNull("nextCursor") || json.get("nextCursor") is String))
@@ -40,7 +41,7 @@ class HttpBackend(client: OkHttpClient = OkHttpClient()) : Backend {
     }
 
     override suspend fun read(connection: Connection, id: String): AlertDetail =
-        request(connection, connection.endpoint("v1", "alerts", id)) { json ->
+        request(connection, connection.endpoint("v1", "alerts", id)) { json, _ ->
             require(json.text("id") == id)
             val original = json.getJSONObject("original")
             require(original.get("schemaVersion") == 1)
@@ -48,10 +49,10 @@ class HttpBackend(client: OkHttpClient = OkHttpClient()) : Backend {
         }
 
     override suspend fun checkpoint(connection: Connection): String =
-        request(connection, connection.endpoint("v1", "changes", "checkpoint"), recovery = true, method = "POST") { json -> json.cursor("cursor") }
+        request(connection, connection.endpoint("v1", "changes", "checkpoint"), recovery = true, method = "POST") { json, _ -> json.cursor("cursor") }
 
     override suspend fun changes(connection: Connection, cursor: String): ChangePage =
-        request(connection, connection.endpoint("v1", "changes").newBuilder().addQueryParameter("cursor", cursor).addQueryParameter("limit", "50").build(), recovery = true) { json ->
+        request(connection, connection.endpoint("v1", "changes").newBuilder().addQueryParameter("cursor", cursor).addQueryParameter("limit", "50").build(), recovery = true) { json, _ ->
             val values = json.getJSONArray("items")
             require(values.length() <= 50)
             val items = (0 until values.length()).map { index ->
@@ -71,13 +72,55 @@ class HttpBackend(client: OkHttpClient = OkHttpClient()) : Backend {
             ChangePage(items, next, more)
         }
 
-    private suspend fun <T> request(connection: Connection, url: HttpUrl, history: Boolean = false, recovery: Boolean = false, method: String = "GET", parse: (JSONObject) -> T): T =
+    override suspend fun pushRegistration(connection: Connection): PushRegistration =
+        request(connection, connection.endpoint("v1", "installation", "push"), registration = true, parse = ::parsePushRegistration)
+
+    override suspend fun putPush(connection: Connection, mutation: PushMutation, destination: PushDestination): PushRegistration {
+        val body = JSONObject().put("registrationId", destination.registrationId).put("provider", destination.provider)
+            .put("destination", destination.destination).toString().toByteArray(Charsets.UTF_8)
+        if (body.size > 16_384) throw InboxFailure(Problem.CONFIGURATION)
+        return request(connection, connection.endpoint("v1", "installation", "push"), registration = true, method = "PUT", body = body, mutation = mutation) { json, response ->
+            parsePushRegistration(json, response).also {
+                require(it.enabled && it.registrationId == destination.registrationId && it.provider == destination.provider)
+                require(mutation.version < Long.MAX_VALUE && it.version == mutation.version + 1)
+            }
+        }
+    }
+
+    override suspend fun deletePush(connection: Connection, mutation: PushMutation): PushRegistration =
+        request(connection, connection.endpoint("v1", "installation", "push"), registration = true, method = "DELETE", mutation = mutation) { json, response ->
+            parsePushRegistration(json, response).also {
+                require(!it.enabled && mutation.version < Long.MAX_VALUE && it.version == mutation.version + 1)
+            }
+        }
+
+    private suspend fun <T> request(
+        connection: Connection,
+        url: HttpUrl,
+        history: Boolean = false,
+        recovery: Boolean = false,
+        registration: Boolean = false,
+        method: String = "GET",
+        body: ByteArray? = null,
+        mutation: PushMutation? = null,
+        parse: (JSONObject, Response) -> T,
+    ): T =
         suspendCancellableCoroutine { continuation ->
             val request = Request.Builder().url(url)
                 .header("Authorization", "Bearer ${connection.secret}")
                 .header("Accept", "application/json")
                 .header("Cache-Control", "no-store")
-                .method(method, if (method == "POST") byteArrayOf().toRequestBody() else null).build()
+                .apply {
+                    mutation?.let {
+                        header("If-Match", "\"${it.version}\"")
+                        header("Idempotency-Key", it.key)
+                    }
+                }
+                .method(method, when {
+                    body != null -> body.toRequestBody("application/json; charset=utf-8".toMediaType())
+                    method == "POST" -> byteArrayOf().toRequestBody()
+                    else -> null
+                }).build()
             val call = transport.newCall(request)
             continuation.invokeOnCancellation { call.cancel() }
             call.enqueue(object : Callback {
@@ -88,11 +131,11 @@ class HttpBackend(client: OkHttpClient = OkHttpClient()) : Backend {
                 override fun onResponse(call: Call, response: Response) {
                     try {
                         val result = response.use {
-                            checkStatus(it, history, recovery)
+                            checkStatus(it, history, recovery, registration)
                             val body = it.body ?: throw InboxFailure(Problem.RESPONSE)
                             val source = body.source()
                             if (source.request(524_289)) throw InboxFailure(Problem.RESPONSE)
-                            parse(JSONObject(source.readUtf8()))
+                            parse(JSONObject(source.readUtf8()), it)
                         }
                         continuation.resume(result)
                     } catch (failure: InboxFailure) {
@@ -109,15 +152,16 @@ class HttpBackend(client: OkHttpClient = OkHttpClient()) : Backend {
 
 private fun transportFailure(error: IOException) = InboxFailure(if (error is SSLException) Problem.TLS else Problem.NETWORK)
 
-private fun checkStatus(response: Response, history: Boolean, recovery: Boolean) {
+private fun checkStatus(response: Response, history: Boolean, recovery: Boolean, registration: Boolean) {
+    if (registration && response.code in setOf(409, 412)) throw InboxFailure(registrationError(response))
     if (recovery && response.code in setOf(400, 409)) throw InboxFailure(recoveryError(response))
-    if (response.code == 400) throw InboxFailure(historyError(response))
+    if (response.code == 400) throw InboxFailure(if (registration) Problem.RESPONSE else historyError(response))
     val problem = when (response.code) {
         200 -> return
         in 300..399 -> Problem.REDIRECT
         401 -> Problem.AUTHENTICATION
         403 -> Problem.PERMISSION
-        404 -> if (history || recovery) Problem.RESPONSE else Problem.NOT_FOUND
+        404 -> if (history || recovery || registration) Problem.RESPONSE else Problem.NOT_FOUND
         in 500..599 -> Problem.NETWORK
         else -> Problem.RESPONSE
     }

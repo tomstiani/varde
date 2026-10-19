@@ -51,17 +51,17 @@ dependencies {
 }
 
 tasks.withType<Test>().configureEach {
-    if (name == "testDebugUnitTest" || name == "testReleaseUnitTest") exclude("**/GoHistoryTest*", "**/GoTwoBackendTest*")
+    if (name == "testDebugUnitTest" || name == "testReleaseUnitTest") exclude("**/GoHistoryTest*", "**/GoTwoBackendTest*", "**/GoPushRegistrationTest*", "**/GoNotificationControlsTest*")
 }
 
 tasks.register<Test>("goHistoryTest") {
-    description = "Verify Android snapshot browsing against an actual temporary Go/SQLite backend."
+    description = "Verify Android history, recovery and registration against temporary Go/SQLite backends."
     group = "verification"
     val unitTests = tasks.named<Test>("testDebugUnitTest")
     dependsOn(unitTests)
     testClassesDirs = unitTests.get().testClassesDirs
     classpath = unitTests.get().classpath
-    include("**/GoHistoryTest.class", "**/GoTwoBackendTest.class")
+    include("**/GoHistoryTest.class", "**/GoTwoBackendTest.class", "**/GoPushRegistrationTest.class", "**/GoNotificationControlsTest.class")
     systemProperty("varde.backend.dir", rootProject.file("../backend").canonicalPath)
     inputs.files(fileTree(rootProject.file("../backend")) {
         include("**/*.go", "**/*.sql", "go.mod", "go.sum")

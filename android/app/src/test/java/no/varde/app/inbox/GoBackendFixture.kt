@@ -61,6 +61,11 @@ internal class GoBackendFixture(private val backendDirectory: File) : Closeable 
 
     fun resume() { check(process == null); start() }
 
+    fun additionalInstallation(): String {
+        val identity = JSONObject(operator("identity", "create", "installation", "test-other-installation")).getString("id")
+        return JSONObject(operator("credential", "issue", identity)).getString("secret")
+    }
+
     fun rotateInstallation() {
         val replacement = JSONObject(operator("credential", "issue", installationIdentity))
         operator("credential", "revoke", installationCredential)

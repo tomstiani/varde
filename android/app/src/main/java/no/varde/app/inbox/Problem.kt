@@ -11,6 +11,8 @@ enum class Problem(val explanation: String) {
     TLS("The secure connection could not be verified. Check the backend URL and its Android-trusted HTTPS certificate."),
     HISTORY_CURSOR("This history position is no longer valid. Refresh all connections to start a new browsing session."),
     RECOVERY_CURSOR("Alert recovery must start from a new checkpoint. Existing history will remain silent."),
+    REGISTRATION_CHANGED("Notification registration changed. Reload its current state before retrying activation."),
+    IDEMPOTENCY_CONFLICT("The notification request conflicts with an earlier request. Reconcile registration before retrying."),
     RECOVERY_PENDING("More changes remain in this recovery pass. Retry recovery or reopen the app to continue."),
     REDIRECT("The backend redirected the request. Correct its URL in connection settings."),
     RESPONSE("The backend returned an unsupported response. Check its URL and version, then refresh."),

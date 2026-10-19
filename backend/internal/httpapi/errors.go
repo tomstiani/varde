@@ -8,19 +8,21 @@ import (
 )
 
 var errorStatuses = map[string]int{
-	"unauthorized":        http.StatusUnauthorized,
-	"forbidden":           http.StatusForbidden,
-	"not_found":           http.StatusNotFound,
-	"identity_conflict":   http.StatusConflict,
-	"body_too_large":      http.StatusRequestEntityTooLarge,
-	"unsupported_media":   http.StatusUnsupportedMediaType,
-	"invalid_json":        http.StatusBadRequest,
-	"invalid_arguments":   http.StatusBadRequest,
-	"invalid_cursor":      http.StatusBadRequest,
-	"sync_reset_required": http.StatusConflict,
-	"invalid_field":       http.StatusUnprocessableEntity,
-	"backlog_full":        http.StatusServiceUnavailable,
-	"storage_unavailable": http.StatusServiceUnavailable,
+	"unauthorized":         http.StatusUnauthorized,
+	"forbidden":            http.StatusForbidden,
+	"not_found":            http.StatusNotFound,
+	"identity_conflict":    http.StatusConflict,
+	"idempotency_conflict": http.StatusConflict,
+	"registration_changed": http.StatusPreconditionFailed,
+	"body_too_large":       http.StatusRequestEntityTooLarge,
+	"unsupported_media":    http.StatusUnsupportedMediaType,
+	"invalid_json":         http.StatusBadRequest,
+	"invalid_arguments":    http.StatusBadRequest,
+	"invalid_cursor":       http.StatusBadRequest,
+	"sync_reset_required":  http.StatusConflict,
+	"invalid_field":        http.StatusUnprocessableEntity,
+	"backlog_full":         http.StatusServiceUnavailable,
+	"storage_unavailable":  http.StatusServiceUnavailable,
 }
 
 func writeError(w http.ResponseWriter, err error) {

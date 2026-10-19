@@ -23,6 +23,10 @@ internal class BoundedBackend(private val delegate: Backend, private val history
     override suspend fun checkpoint(connection: Connection) = request { delegate.checkpoint(connection) }
     override suspend fun changes(connection: Connection, cursor: String) = request { delegate.changes(connection, cursor) }
 
+    override suspend fun pushRegistration(connection: Connection) = request { delegate.pushRegistration(connection) }
+    override suspend fun putPush(connection: Connection, mutation: PushMutation, destination: PushDestination) = request { delegate.putPush(connection, mutation, destination) }
+    override suspend fun deletePush(connection: Connection, mutation: PushMutation) = request { delegate.deletePush(connection, mutation) }
+
     private suspend fun <T> request(operation: suspend () -> T): T = permits.withPermit {
         try {
             withTimeout(15_000) { operation() }

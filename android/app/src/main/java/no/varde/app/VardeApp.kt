@@ -14,6 +14,7 @@ import no.varde.app.inbox.Inbox
 import no.varde.app.inbox.sameAccess
 import no.varde.app.inbox.Problem
 import no.varde.app.notifications.NotificationDestination
+import no.varde.app.notifications.NotificationControl
 
 @Composable
 fun VardeApp(
@@ -23,6 +24,10 @@ fun VardeApp(
     notificationTools: @Composable () -> Unit = {},
     recoveryProblems: Map<String, Problem> = emptyMap(),
     onRecoveryRetry: (String) -> Unit = {},
+    notificationControls: Map<String, NotificationControl> = emptyMap(),
+    onNotificationToggle: (String, Boolean) -> Unit = { _, _ -> },
+    onNotificationPermission: () -> Unit = {},
+    onNotificationRetry: (String) -> Unit = {},
 ) {
     val state by inbox.state.collectAsStateWithLifecycle()
     val navigation = rememberNavController()
@@ -61,7 +66,9 @@ fun VardeApp(
                         onAdd = addConnection,
                         onEdit = editConnection,
                         tools = notificationTools,
-                        recoveryProblems = recoveryProblems, onRecoveryRetry = onRecoveryRetry)
+                        recoveryProblems = recoveryProblems, onRecoveryRetry = onRecoveryRetry,
+                        notificationControls = notificationControls, onNotificationToggle = onNotificationToggle,
+                        onNotificationPermission = onNotificationPermission, onNotificationRetry = onNotificationRetry)
                 }
                 composable("connection/{id}") { entry ->
                     val id = entry.arguments?.getString("id")?.takeUnless { it == "new" }
