@@ -1,6 +1,6 @@
 # Android local acceptance: verified scope
 
-This record covers the operator-approved USB/scripted-sender substitute for part of issue #16. It is not a claim that every original acceptance criterion passed.
+This record covers the operator-approved USB/scripted-sender substitute for part of issue #16 and the inbox delivered in [PR #17](https://github.com/tomstiani/varde/pull/17). It is not a claim that every original acceptance criterion passed. Counts and limits below describe that run; later [local notifications](android-local-notifications.md) and [foreground recovery](android-missed-alert-recovery.md) have separate evidence.
 
 ## Observed physical-phone result
 
@@ -39,4 +39,4 @@ Local HTTPS-proxy certificate trust is confined to JVM tests. There is no releas
 - **Every lifecycle scenario in one live phone session:** restart/duplicate/outage/recovery/rename/replacement/removal are automated against the real backends and ordinary UI tests, but have not all been observed together on the live USB phone. The runbook provides those optional operator steps.
 - **Push, rich views, typed data, model calls, change sync and durable offline alert content:** not implemented by this milestone.
 
-The original #16 real-network/n8n acceptance gate and parent issue remain open. No tracker issue was closed or updated on the operator's behalf.
+The original #16 real-network/n8n acceptance gate and parent issue #11 remain open. No tracker issue was closed or updated as part of this USB run; later implementation reconciliation does not waive its unobserved acceptance items.

@@ -2,7 +2,20 @@
 
 **Status:** approved and published as [issue #19](https://github.com/tomstiani/varde/issues/19). Implementation tickets are #20 through #25, linked as sub-issues with native blocking dependencies. GitHub is the canonical tracker. Live provider configuration is not authorized.
 
-**Context:** extends the implemented combined plain-text inbox and durable Go backend. Advances map #1 and resolves the notification-timing question in #8 once approved and published. The existing remote HTTPS/n8n acceptance gate in #16 remains separate and open; this work does not require a homelab deployment.
+**Context:** extends the implemented combined plain-text inbox and durable Go backend. Advances map #1; the approved specification settles the notification-timing question in #8. The existing remote HTTPS/n8n acceptance gate in #16 remains separate and open; this work does not require a homelab deployment.
+
+## Implementation status
+
+| Ticket | Delivered or remaining |
+| --- | --- |
+| #20 — local notification path | Merged in [PR #26](https://github.com/tomstiani/varde/pull/26); [verification](../verification/android-local-notifications.md) |
+| #21 — foreground missed-alert recovery | Merged in [PR #28](https://github.com/tomstiani/varde/pull/28); [verification](../verification/android-missed-alert-recovery.md) |
+| #22 — registration and notification controls | Next implementation slice; not implemented |
+| #23 — real FCM Adapters | Pending #22 |
+| #24 — background recovery | Pending #22; independent of #23 afterward |
+| #25 — integrated notification acceptance | Pending #23 and #24; live checks still require operator approval |
+
+The user stories and implementation contract below include the complete target, not only currently delivered behaviour.
 
 ## Problem Statement
 

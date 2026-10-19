@@ -1,8 +1,10 @@
 # First Android slice: named connections and a combined plain-text inbox
 
-**Status:** approved and published as [issue #11](https://github.com/tomstiani/varde/issues/11). Implementation tickets are #12 through #16; GitHub is the canonical tracker.
+**Status:** approved and published as [issue #11](https://github.com/tomstiani/varde/issues/11). Core implementation tickets #12–#15 are delivered in [PR #17](https://github.com/tomstiani/varde/pull/17). The parent remains open for #16's deferred remote HTTPS/n8n and complete live-phone lifecycle acceptance. GitHub is the canonical tracker.
 
-**Context:** follows the durable backend increment in issue #9 and PR #10; advances the end-to-end goal in map #1 without completing its rich-view or notification release. The planning branch starts at commit `19ec01a`, including the leap-second validation fix. Integration must account for how PR #10 eventually lands; do not duplicate its implementation commits after a squash merge.
+**Later increments:** [PR #26](https://github.com/tomstiani/varde/pull/26) adds local notifications and [PR #28](https://github.com/tomstiani/varde/pull/28) adds foreground change recovery under [spec #19](android-alert-notifications.md). The original problem statement, scope and acceptance contract below are retained as this milestone's planning record; they are not a current feature inventory.
+
+**Context:** follows the durable backend increment in issue #9 / merged PR #10 and advances map #1 without completing its rich-view or notification release. The original planning baseline was commit `19ec01a`, including the leap-second validation fix. That foundation and this inbox are now integrated; the earlier squash-merge landing prerequisite is no longer pending.
 
 ## Problem Statement
 
@@ -220,9 +222,9 @@ Existing backend prior art covers role separation, credentials, duplicate identi
 
 ## Further Notes
 
-- This milestone deliberately proves manual use before push. Its success does not settle the outstanding notification-timing or model-provider decisions.
+- This milestone deliberately proves manual use before push. Notification timing was subsequently settled in spec #19; production model selection remains unresolved.
 - Multiple connections are an explicit revision of the initial single-connection proposal. The combined feed exists only on Android; each backend retains independent history and authentication.
 - Cross-backend timestamp ordering cannot establish true global event or acceptance order when clocks differ. Original event time is descriptive, not the merge key. Partial failures make the feed visibly incomplete.
 - HTTPS URL aliases can list the same backend twice. That limitation is accepted for this milestone; future backend identity discovery could address it without changing current local connection identity.
 - The spec is intentionally larger than one implementation session. After approval, split it into end-to-end tracer-bullet tickets with blocking edges rather than separate disconnected backend and Android projects.
-- Published with approval as issue #11, labelled `ready-for-agent`; tickets #12 through #16 form its ordered implementation chain. This local specification is a retained planning reference. Update tracker issues only with explicit approval.
+- Published with approval as issue #11; tickets #12 through #16 form its ordered implementation chain. Core implementation is delivered, while the remaining gate is operator acceptance in #16. This local specification is a retained planning reference. Update tracker issues only with explicit approval.
