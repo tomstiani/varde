@@ -1,6 +1,12 @@
 package no.varde.app
 
+import android.Manifest
 import android.app.Application
+import android.content.pm.PackageManager
+import android.os.Build
+import android.provider.Settings
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.lifecycle.lifecycleScope
 import android.content.Intent
 import android.os.Bundle
 import android.view.WindowManager
@@ -24,6 +30,21 @@ import no.varde.app.notifications.NotificationIntents
 import no.varde.app.notifications.NotificationRuntime
 
 class MainActivity : ComponentActivity() {
+    private val permissionRequest = registerForActivityResult(ActivityResultContracts.RequestPermission()) {
+        ViewModelProvider(this)[InboxViewModel::class.java].recoverAlerts()
+    }
+
+    private fun notificationPermission() {
+        lifecycleScope.launch {
+            val model = ViewModelProvider(this@MainActivity)[InboxViewModel::class.java]
+            try {
+                if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED && model.reservePermissionPrompt()) {
+                    permissionRequest.launch(Manifest.permission.POST_NOTIFICATIONS)
+                } else startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, packageName))
+            } catch (_: no.varde.app.inbox.InboxFailure) { }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
@@ -33,9 +54,12 @@ class MainActivity : ComponentActivity() {
         setContent {
             val notification by model.notification.collectAsStateWithLifecycle()
             val recoveryProblems by model.recoveryProblems.collectAsStateWithLifecycle()
+            val notificationControls by model.notificationControls.collectAsStateWithLifecycle()
             VardeApp(model.inbox, notification, model::notificationHandled,
                 notificationTools = { LocalNotificationTools(model.inbox) },
-                recoveryProblems = recoveryProblems, onRecoveryRetry = model::retryRecovery)
+                recoveryProblems = recoveryProblems, onRecoveryRetry = model::retryRecovery,
+                notificationControls = notificationControls, onNotificationToggle = model::setNotificationsEnabled,
+                onNotificationPermission = ::notificationPermission, onNotificationRetry = model::retryRecovery)
         }
     }
 
@@ -57,6 +81,7 @@ class InboxViewModel(application: Application) : AndroidViewModel(application) {
     private val mutableNotification = MutableStateFlow<NotificationDestination?>(null)
     val notification = mutableNotification.asStateFlow()
     val recoveryProblems = runtime.coordinator.recoveryProblems
+    val notificationControls = runtime.coordinator.notificationControls
 
     init {
         viewModelScope.launch {
@@ -76,8 +101,10 @@ class InboxViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun recoverAlerts() { runtime.launch { runtime.coordinator.recoverAll() } }
-    fun retryRecovery(connectionId: String) { runtime.launch { runtime.coordinator.recover(connectionId) } }
+    fun recoverAlerts() { runtime.launch { runtime.refreshNotifications() } }
+    fun retryRecovery(connectionId: String) { runtime.launch { runtime.refreshNotifications(connectionId) } }
+    fun setNotificationsEnabled(connectionId: String, enabled: Boolean) { runtime.setNotificationsEnabled(connectionId, enabled) }
+    suspend fun reservePermissionPrompt() = runtime.coordinator.reservePermissionPrompt()
 
     fun notificationHandled() { mutableNotification.value = null }
 }

@@ -23,6 +23,9 @@ interface Backend {
     suspend fun read(connection: Connection, id: String): AlertDetail
     suspend fun checkpoint(connection: Connection): String = throw InboxFailure(Problem.RESPONSE)
     suspend fun changes(connection: Connection, cursor: String): ChangePage = throw InboxFailure(Problem.RESPONSE)
+    suspend fun pushRegistration(connection: Connection): PushRegistration = throw InboxFailure(Problem.RESPONSE)
+    suspend fun putPush(connection: Connection, mutation: PushMutation, destination: PushDestination): PushRegistration = throw InboxFailure(Problem.RESPONSE)
+    suspend fun deletePush(connection: Connection, mutation: PushMutation): PushRegistration = throw InboxFailure(Problem.RESPONSE)
 }
 
 interface ConnectionSettings {

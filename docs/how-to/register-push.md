@@ -1,6 +1,6 @@
 # Manage a backend installation's push registration
 
-The backend supports conditional registration, removal, a silent recovery baseline and durable delivery scheduling. [#22](https://github.com/tomstiani/varde/issues/22) remains incomplete: Android does not call these operations or expose notification controls yet. The `fcm` provider name identifies the destination format; it does not imply that a provider is configured. The server has no live provider configured. Use the [injected fake-provider demonstration](test-push-delivery.md) to exercise dispatch without Google or a phone.
+The backend supports conditional registration, removal, a silent recovery baseline and durable delivery scheduling. The Android coordinator and [notification controls](control-notifications.md) use these operations when an injected token source supplies a destination. The ordinary app has no token-providing SDK until #23, so activation remains visibly pending. This is automated/local implementation evidence, not observed FCM or physical-phone delivery. The `fcm` provider name identifies the destination format; it does not imply that a provider is configured. The server has no live provider configured. Use the [injected fake-provider demonstration](test-push-delivery.md) to exercise dispatch without Google or a phone.
 
 Use this reference when implementing an installation client. [Parent #19](https://github.com/tomstiani/varde/issues/19) defines the complete target contract. [Change recovery](recover-alerts.md#backend-wire-reference) defines the returned baseline cursor.
 
@@ -54,7 +54,7 @@ Token refresh uses the current session ID, a new idempotency key and current ETa
 
 Send `DELETE /v1/installation/push` with the current `If-Match` and a new `Idempotency-Key`. Send no body or query parameters. Success returns `200`, a new ETag and the disabled representation shown above. Removal does not delete alerts or revoke read credentials.
 
-Re-enabling requires a fresh session ID and captures a current silent baseline. Muted history must not be announced. Removal atomically invalidates queued destination work. Local Android muting and cancellation are still pending in #22.
+Re-enabling requires a fresh session ID and captures a current silent baseline. Muted history must not be announced. Removal atomically invalidates queued destination work. Android also invalidates local eligibility and cancels output immediately when muting.
 
 ## Retry without overwriting newer state
 
