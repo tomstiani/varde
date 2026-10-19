@@ -2,7 +2,7 @@
 
 Varde will use one application and SQLite to accept alerts durably, generate validated rich views, and serve a native Android app. Push is a best-effort hint; authenticated reads and change sync are authoritative.
 
-**Status:** architecture baseline based on the confirmed contract interview. The contracts below are agreed; the complete backend is not implemented. [Issue #9](https://github.com/tomstiani/varde/issues/9) selects Go, standard `net/http`, and SQLite for the first slice; see [local backend setup](../how-to/run-backend.md) for what currently works. Internal records and interfaces beyond that slice remain proposed. The concrete push provider is undecided.
+**Status:** architecture baseline, not a claim that the complete release is implemented. The Go/`net/http`/SQLite foundation (#9), snapshot history/inbox (#12–#15), local notification path (#20), and foreground recovery (#21) are merged. See [backend setup](../how-to/run-backend.md) and [recovery](../how-to/recover-alerts.md) for implemented Interfaces. Model execution and remote push scheduling/registration remain proposed. [The approved notification specification](../specs/android-alert-notifications.md) selects replaceable FCM delivery and acceptance-triggered generic notifications; #22–#25 implement and verify the remaining delivery path.
 
 ## Scope
 
@@ -40,7 +40,7 @@ The lifecycle scheduler must observe each paid step separately. Do not retry an 
 
 The lifecycle implementation owns durable scheduling and retry accounting. The adapter hides provider details, not canonical alert history. Device credentials may register, replace, or remove only their own push destination.
 
-Push timing is intentionally undecided. Whether the hint follows acceptance or terminal presentation, its referenced state must already be readable. Notification-envelope content and the concrete provider still need a delivery specification.
+The approved policy schedules a minimal hint after durable acceptance, without waiting for terminal presentation or future rich-view generation. Android immediately posts a generic source-labelled notification, then fetches original text and silently enriches it. FCM is the first provider behind replaceable Adapters; the proposed envelope contains only a version, registration routing ID and alert ID. The local path is implemented in #20; real registration, durable provider dispatch and FCM delivery remain #22/#23 work. See the [notification specification](../specs/android-alert-notifications.md) for the full delivery/privacy contract.
 
 ### Seam discipline
 
@@ -143,7 +143,7 @@ Do not turn the first release into a general event-sourcing platform. Canonical 
 3. Return the existing alert for identical content, or reject conflicting content.
 4. For a new identity, enforce unfinished-work capacity.
 5. Insert the immutable original, pending presentation/work, and acceptance change entry atomically.
-6. Include any acceptance-triggered push work in that transaction if that notification policy is later selected.
+6. When push scheduling is implemented, include eligible acceptance-triggered push work in that same transaction. The policy is selected, but current increments do not yet create remote push work.
 7. Commit before returning success.
 
 A uniqueness constraint resolves concurrent duplicates. Capacity enforcement must be transactional too. A database or commit failure must not return acceptance success. If the response is lost after commit, the sender's stable event ID makes retry safe.
@@ -161,7 +161,7 @@ Use claim/attempt identity to prevent a stale response from overwriting a later 
 
 ### 3. Commit a terminal presentation
 
-Atomically persist the rich view or fallback, mark processing finished, append its change entry, and insert any terminal-triggered push work selected by the future notification policy. This transaction releases unfinished-work capacity.
+Atomically persist the rich view or fallback, mark processing finished, and append its change entry. The selected notification policy does not send another interrupting push on presentation completion; later detail enrichment stays silent. This transaction releases unfinished-work capacity.
 
 Store a successful intermediate result before starting the next step. Otherwise restart recovery would needlessly rerun completed paid work.
 
@@ -203,7 +203,7 @@ Use deterministic clocks and fault injection alongside real temporary SQLite dat
 
 ## Implemented worker recovery
 
-The plain-text fallback worker retries known SQLite `BUSY` contention with capped jittered backoff and no attempt limit. Fatal or uncertain-cleanup failures still stop the backend. This storage-recovery policy is separate from the bounded paid-step retry policy above; it does not implement paid execution. The HTTP adapter owns a five-second request budget, while the application writes bounded best-effort stderr diagnostics. See the [worker recovery contract](../specs/backend-worker-recovery.md) and [operator guide](../how-to/run-backend.md). Migration execution policy, backup/restore and production packaging remain deferred.
+The plain-text fallback worker retries known SQLite `BUSY` contention with capped jittered backoff and no attempt limit. Fatal or uncertain-cleanup failures still stop the backend. This storage-recovery policy is separate from the bounded paid-step retry policy above; it does not implement paid execution. The HTTP adapter owns a five-second request budget, while the application writes bounded best-effort stderr diagnostics. See the [worker recovery contract](../specs/backend-worker-recovery.md) and [operator guide](../how-to/run-backend.md). Large-archive migration execution policy, supported backup/restore and full production operations remain deferred. [Initial Linux Compose packaging](../how-to/run-compose.md) is available without changing the loopback-only listener.
 
 ## Evidence, alternatives, and deferred choices
 
@@ -214,7 +214,7 @@ The [retained experiment findings](../research/alert-view-experiments.md) suppor
 Deferred deliberately:
 
 - HTTP interfaces beyond plain-text submission, snapshot history and bounded change recovery, including typed-data schemas and push destination registration.
-- Concrete push provider, notification payload privacy, and timing relative to generation.
+- Implementation of the selected replaceable FCM delivery path, registration/controls, durable provider scheduling and background Android recovery; its timing/privacy policy is already approved in #19.
 - Production model configuration, optional reasoning adoption, and promotion of the tested relevance prompt.
 - Paid-execution transport deadlines, prepared-request/context limits, and shutdown/claim mechanics. The implemented HTTP request budget and fallback-worker recovery do not settle these provider-call policies.
 - Background change scheduling and remote push registration. The implemented foreground recovery wire contract is documented in the [recovery guide](../how-to/recover-alerts.md); original alert content still remains memory-only on Android.

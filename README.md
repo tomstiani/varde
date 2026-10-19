@@ -33,7 +33,7 @@ Homelab services and agents can send useful alerts, but a stream of plain-text n
 1. An alert source, such as an n8n workflow, sends an alert to the self-hosted backend.
 2. The backend durably retains the original alert and pending processing before acknowledging acceptance.
 3. Hosted models select supplied data for approved components. The backend assembles and validates a declarative JSON layout, retaining it or falling back to the original text. Models do not send executable JavaScript or native code.
-4. Best-effort push signals the Android app; timing relative to generation remains undecided.
+4. Best-effort push signals the Android app after durable acceptance. Android immediately shows a generic notification, then fetches original text and silently enriches it; push delivery itself is not implemented yet.
 5. Authenticated change sync recovers missed arrivals and later presentation updates. The app loads history on demand and opens a rich view or the original text.
 
 The backend runs in the user's homelab. The app reaches it over the user's chosen network path, such as Pangolin, Tailscale, or the public internet. The project does not depend on a particular network access service.
@@ -53,6 +53,10 @@ The backend runs in the user's homelab. The app reaches it over the user's chose
 
 Alerts should include an explicit priority or severity. Initially, the model uses the alert payload only; fetching additional context from homelab services is out of scope.
 
-## Not decided yet
+## Current status and remaining work
 
-The backend uses one Go application, standard `net/http`, and SQLite; Android uses Kotlin and Jetpack Compose. Concrete push delivery, production model configuration, notification timing, and typed-data/layout wire formats remain undecided. Named connections, older-history browsing, and explicit partial-outage recovery are implemented. Real two-backend transport tests and physical-phone USB setup/browsing are verified; original remote HTTPS/n8n acceptance remains deferred. See the architecture proposal and [approved inbox specification](docs/specs/android-combined-inbox.md) before extending it.
+- **Implemented:** Go/`net/http`/SQLite backend, Kotlin/Compose named-connection inbox, older-history browsing, explicit partial-outage recovery, local alert notifications, foreground change recovery and per-connection catch-up. Linux Compose setup and four-job PR CI are available.
+- **Agreed, not yet fully implemented:** FCM first behind replaceable provider Adapters; minimal signals, immediate generic notifications and silent fetched-detail enrichment. Registration/controls, actual FCM delivery, background recovery and integrated notification acceptance remain [#22–#25](https://github.com/tomstiani/varde/issues/19). The next implementation slice is #22.
+- **Still unresolved or deferred:** production model selection, final typed-data/rich-view wire schemas, supported backup/restore and full production operations. Real two-backend transport tests and physical-phone USB inbox setup/browsing are verified; original remote HTTPS/n8n and full live-phone lifecycle acceptance remain deferred in #16.
+
+See the [architecture](docs/architecture/backend.md), [inbox specification](docs/specs/android-combined-inbox.md), and [notification/recovery specification](docs/specs/android-alert-notifications.md) for contracts and milestone boundaries.
