@@ -144,6 +144,10 @@ docker compose -p varde up -d --build
 
 Schema upgrades may prevent rollback to an older binary. See [backend storage and migration limits](run-backend.md).
 
+## Optional local generation configuration
+
+The default Compose command leaves generation disabled. [Local Jev configuration](configure-generation.md#mount-files-in-compose) supplies a separate read-only configuration/key-file override and explains UID/GID `10001:10001` readability, controlled restart, retention uncertainty and billing responsibility. Valid-looking configuration still makes zero provider requests and leaves all alerts on original-text fallback; it does not enable rich generation.
+
 ## Optional second backend
 
 Use a separate project and port, consistently for all its commands:
@@ -166,4 +170,14 @@ python3 scripts/test-compose.py
 
 It builds and starts a unique Compose project on loopback port `18080`, issues synthetic credentials in memory, submits an alert, recreates the container, checks retained reads and duplicate recovery, then removes only its own containers and volume. Set `VARDE_TEST_PORT` if needed. Do not interrupt cleanup; if it fails, inspect the printed smoke-project name before removing leftover resources.
 
-The smoke test does not provision or verify Pangolin, n8n, trusted HTTPS or the physical phone. Those are operator steps above. It also does not replace the full [two-backend acceptance criteria](../specs/android-inbox-tickets/05-two-backend-acceptance.md), including outage/recovery and connection changes. Record observed results without secrets; keep unobserved criteria open.
+The same existing **Linux Compose smoke test** CI job also runs a separate disposable runtime-key permission fixture:
+
+```sh
+python3 scripts/test-generation-compose.py
+```
+
+It uses only temporary invented key/configuration files and a uniquely named Compose project. A root helper container changes ownership/modes on the invented key file; the ordinary service checks it as UID/GID `10001:10001` through read-only runtime mounts. This requires a local Docker daemon with bind-mount access to the temporary directory and permission to perform those ownership changes. Image/dependency downloads need network access when uncached; provider credentials and provider calls are not required. The fixture removes only its own Compose resources.
+
+The generation permission fixture's Linux/Docker runtime result remains unverified until ordinary approved PR CI executes it. Local workflow lint, a Linux cross-build or Compose configuration validation does not establish a runtime pass.
+
+These fixtures do not provision or verify Pangolin, n8n, trusted HTTPS or the physical phone. Those are operator steps above. They also do not replace the full [two-backend acceptance criteria](../specs/android-inbox-tickets/05-two-backend-acceptance.md), including outage/recovery and connection changes. Record observed results without secrets; keep unobserved criteria open.

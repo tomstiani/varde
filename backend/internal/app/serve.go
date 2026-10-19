@@ -15,7 +15,7 @@ import (
 	"github.com/tomstiani/varde/backend/internal/lifecycle"
 )
 
-func serve(ctx context.Context, store *lifecycle.Lifecycle, address string, out, diagnostics io.Writer) error {
+func serve(ctx context.Context, store *lifecycle.Lifecycle, address string, out, diagnostics io.Writer, generationCategory string) error {
 	host, _, err := net.SplitHostPort(address)
 	if err != nil || net.ParseIP(host) == nil || !net.ParseIP(host).IsLoopback() {
 		return errors.New("loopback_required")
@@ -41,11 +41,12 @@ func serve(ctx context.Context, store *lifecycle.Lifecycle, address string, out,
 		MaxHeaderBytes:    16384,
 		ErrorLog:          log.New(io.Discard, "", 0),
 	}
-	return runServer(ctx, store, server, listener, diagnostics)
+	return runServer(ctx, store, server, listener, diagnostics, generationCategory)
 }
 
-func runServer(ctx context.Context, store *lifecycle.Lifecycle, server *http.Server, listener net.Listener, diagnostics io.Writer) error {
+func runServer(ctx context.Context, store *lifecycle.Lifecycle, server *http.Server, listener net.Listener, diagnostics io.Writer, generationCategory string) error {
 	events, finishDiagnostics := workerDiagnostics(diagnostics)
+	events <- lifecycle.WorkerEvent{Event: "generation_configuration", Stage: "generation", Category: generationCategory}
 	workerCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	finished := make(chan error, 2)

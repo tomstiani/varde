@@ -22,6 +22,11 @@ func TestMalformedCommandsDoNotAcquireStorage(t *testing.T) {
 		{"unknown serve flag", []string{"serve", "-unknown-flag"}},
 		{"missing serve flag value", []string{"serve", "-listen"}},
 		{"serve positional argument", []string{"serve", "unexpected"}},
+		{"missing generation path", []string{"serve", "-generation-config"}},
+		{"unknown generation action", []string{"generation", "activate"}},
+		{"check positional argument", []string{"generation", "check", "unexpected"}},
+		{"check endpoint flag", []string{"generation", "check", "-endpoint", "https://private.invalid"}},
+		{"check listen flag", []string{"generation", "check", "-listen", "127.0.0.1:8080"}},
 	}
 	for _, test := range cases {
 		t.Run(test.name, func(t *testing.T) {

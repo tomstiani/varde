@@ -277,6 +277,9 @@ func TestExecutableRecoversAndBoundsQueuedRequestsAndShutdown(t *testing.T) {
 		}
 	}
 	for _, event := range executableEvents(t, stderrPath) {
+		if event.Event == "generation_configuration" && event.Stage == "generation" && event.Category == "generation_disabled" && event.RetryCount == 0 && event.ElapsedMilliseconds == 0 {
+			continue
+		}
 		if event.Stage != "fallback_worker" || event.Category != "storage_busy" {
 			t.Fatal("unexpected diagnostic category")
 		}

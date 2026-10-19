@@ -76,6 +76,8 @@ Global `-db` must precede the command. Unknown commands, wrong argument counts, 
 
 `serve` accepts `-listen`; use `127.0.0.1` or `::1`, not a hostname or external address. Port `0` asks the OS to assign an available port.
 
+Optional `-generation-config /absolute/path/generation.json` selects [local Jev configuration](configure-generation.md). Omission leaves generation disabled. `./bin/varde generation check -generation-config /absolute/path/generation.json` performs the same local parser/file checks without opening SQLite or making provider requests. Startup validates retained revisions; the standalone check does not. This slice never dispatches model work, even for `generation_ready`.
+
 The process emits one readiness record to standard output, for example:
 
 ```json
@@ -116,7 +118,7 @@ HTTP bearer credentials are appropriate here only because the executable binds t
 | `observedAt` | RFC 3339 timestamp with explicit timezone; submitted spelling is preserved |
 | `data` | Omitted or `[]` only in this increment |
 
-Reject unknown fields, duplicate JSON object keys, invalid encoding, and incorrect types. Do not trim or rewrite submitted strings. Nonempty `data` is explicitly unsupported until the typed-data increment. The [approved #39 contracts](../specs/rich-alert-contracts.md) define optional typed entries, Jev BYOK and rich views, but their eight-entry allowance, generation flag and secret-file configuration are not implemented by this executable. Do not use the contract examples as runnable requests or setup commands yet.
+Reject unknown fields, duplicate JSON object keys, invalid encoding, and incorrect types. Do not trim or rewrite submitted strings. Nonempty `data` is explicitly unsupported until the typed-data increment. The [approved #39 contracts](../specs/rich-alert-contracts.md) define optional typed entries, Jev BYOK and rich views. [Local configuration and key-file checks](configure-generation.md) are implemented; the eight-entry typed-input allowance, provider execution and rich views are not. Typed-input contract examples are not runnable submissions in this slice.
 
 A new alert returns `201`. The response contains `id`, `acceptedAt`, `original`, and `presentation`. Presentation initially has `state: "pending"` and `revision: 0`; the worker completes it as `state: "fallback"` and `revision: 1`. The fallback reason is stored internally as `model_not_configured`, not exposed as a private diagnostic record to installations.
 
@@ -124,7 +126,7 @@ A new alert returns `201`. The response contains `id`, `acceptedAt`, `original`,
 
 Identical submissions under the same sender/event identity return `200` and the existing ID. Changed content returns `409`, even when capacity is full. Formatting and object-key ordering do not affect comparison; omitted `data` equals `[]`. Revoking or replacing credentials does not reset the sender's event-ID history.
 
-The backend retains at most 1,000 unfinished alerts and rejects new identities retryably when full. Completed fallback alerts remain retained indefinitely without consuming unfinished capacity. Accepted work does not expire after restart. Terminal fallback does not regenerate when a later version adds model configuration.
+The backend retains at most 1,000 unfinished alerts and rejects new identities retryably when full. Completed fallback alerts remain retained indefinitely without consuming unfinished capacity. Accepted work does not expire after restart. Terminal fallback does not regenerate when configuration is enabled, corrected or rotated.
 
 ## Errors and diagnostics
 
@@ -144,7 +146,7 @@ Errors contain a safe `error` category and `message`, plus a known `field` where
 
 A `503` includes `Retry-After: 5`; this is not a guarantee that capacity or storage will recover in five seconds. Never interpret a timeout or missing response as proof that acceptance did not commit. Reuse the same sender event ID on retry.
 
-The executable emits no access log or raw HTTP panic trace. Stdout contains command results or the single readiness record. Recovery events go to stderr: `worker_recovery_started`, `worker_recovery_waiting`, `worker_recovery_succeeded`, and fatal `worker_stopped`. Progress events occur at most once per minute during each recovery period; entry and exit events are separate. Events contain only stage, safe category, retry count and elapsed milliseconds. They describe the worker, not whole-backend health.
+The executable emits no access log or raw HTTP panic trace. Stdout contains command results or the single readiness record. Startup also emits a best-effort `generation_configuration` event to stderr with a [fixed safe category](configure-generation.md#rotation-revision-conflicts-and-unavailable-generation), never a configuration path or key. Recovery events go to stderr: `worker_recovery_started`, `worker_recovery_waiting`, `worker_recovery_succeeded`, and fatal `worker_stopped`. Progress events occur at most once per minute during each recovery period; entry and exit events are separate. Events contain only stage, safe category, retry count and elapsed milliseconds. They describe the worker, not whole-backend health.
 
 Diagnostics are bounded and best-effort: a stalled or failed stderr sink cannot block processing or shutdown, and events may be dropped. Final command failures retain a best-effort sanitized text message; a full stderr pipe cannot prevent failure exit. Do not enable a proxy or debugger that records authorization headers or request bodies. See the [worker recovery contract](../specs/backend-worker-recovery.md) for retry classification, output and verification details.
 
@@ -152,6 +154,6 @@ Diagnostics are bounded and best-effort: a stalled or failed stderr sink cannot 
 
 New data directories use mode `0700`; new database files use `0600`. Existing database files readable by other users are rejected. Existing directory permissions are not automatically changed: the operator must keep the containing directory private. SQLite uses WAL journaling, `synchronous=FULL`, foreign keys, and a one-second lock wait.
 
-The binary transactionally upgrades earlier stores through schema version four: history ordering/cursor metadata, registration/session history, delivery work and provider cooldown state. Stop older backend processes before upgrading, and do not use old binaries to write upgraded stores. Originals, credentials, pending fallback work and change order are retained. Development version-three destinations lack credential binding and are retired rather than assigned an inferred credential; establish a new silent session after upgrade. Failure rolls back the upgrade rather than starting with partial schema changes. Take a consistent private backup before upgrading important data.
+The binary transactionally upgrades earlier stores through schema version five: history ordering/cursor metadata, registration/session history, delivery work, provider cooldown state and nonsecret generation manifests/activation. Version five stores no provider key bytes, paths or fingerprints. Older binaries reject this schema version; rollback needs a tested database rollback/restore plan. Stop older backend processes before upgrading, and do not use old binaries to write upgraded stores. Originals, credentials, pending fallback work and change order are retained. Development version-three destinations lack credential binding and are retired rather than assigned an inferred credential; establish a new silent session after upgrade. Failure rolls back the upgrade rather than starting with partial schema changes. Take a consistent private backup before upgrading important data.
 
 Do not copy a live `.sqlite` file alone: committed records can still reside in its WAL. The database contains private originals and destinations; keep any backup protected and out of ordinary diagnostic exports. Supported backup/restore commands and general rollback detection remain deferred. Change recovery detects some positively invalidated cursors, not arbitrary restored copies; see [recovery limits](recover-alerts.md). This increment is not an archival backup procedure. The acceptance guarantee assumes intact storage and working filesystem durability semantics.

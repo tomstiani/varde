@@ -15,13 +15,26 @@ func Run(ctx context.Context, args []string, out, diagnostics io.Writer) error {
 	if err != nil {
 		return err
 	}
+	if command.kind == checkGeneration {
+		_, category := loadGeneration(command.generationConfig)
+		if err := json.NewEncoder(out).Encode(struct {
+			Event string `json:"event"`
+		}{category}); err != nil {
+			return errors.New("output_failed")
+		}
+		return nil
+	}
 	store, err := lifecycle.Open(command.databasePath)
 	if err != nil {
 		return err
 	}
 	defer store.Close()
 	if command.kind == serveBackend {
-		return serve(ctx, store, command.address, out, diagnostics)
+		category, err := activateGeneration(ctx, store, command.generationConfig)
+		if err != nil {
+			return err
+		}
+		return serve(ctx, store, command.address, out, diagnostics, category)
 	}
 
 	result, err := runOperatorCommand(ctx, store, command)

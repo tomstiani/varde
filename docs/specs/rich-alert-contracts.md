@@ -177,7 +177,7 @@ Timeout cancellation is best effort and not a billing guarantee. A complete inva
 
 ## 5. Local generation configuration
 
-Approved optional server flag contract (not implemented yet): `serve -generation-config /absolute/path/generation.json`. Absence means disabled. No implicit environment-key discovery. A local configuration check uses the same parser and file checks without any authenticated request; exact CLI command spelling can follow application conventions when implemented.
+Approved optional server flag contract ([local configuration guide](../how-to/configure-generation.md)): `serve -generation-config /absolute/path/generation.json`. Absence means disabled. No implicit environment-key discovery. A local configuration check uses the same parser and file checks without any authenticated request; exact CLI command spelling can follow application conventions when implemented.
 
 Configuration is closed JSON with `schemaVersion: 1`, boolean `enabled`, and these optional fields required when enabled:
 
