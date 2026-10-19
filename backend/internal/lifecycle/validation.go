@@ -41,9 +41,15 @@ func decodeOriginal(body []byte) (Original, error) {
 		return Original{}, invalidField("observedAt")
 	}
 	if data, exists := raw["data"]; exists {
-		if len(data) == 0 || data[0] != '[' || json.Unmarshal(data, &original.Data) != nil || len(original.Data) != 0 {
+		if len(data) == 0 || data[0] != '[' || json.Unmarshal(data, &original.Data) != nil {
 			return Original{}, invalidField("data")
 		}
+	}
+	if defaults, exists := raw["dataDefaults"]; exists {
+		original.DataDefaults = defaults
+	}
+	if err := validateMeasurements(&original); err != nil {
+		return Original{}, err
 	}
 	return original, nil
 }
@@ -57,6 +63,7 @@ func validateFieldNames(raw map[string]json.RawMessage) error {
 		"priority":      true,
 		"observedAt":    true,
 		"data":          true,
+		"dataDefaults":  true,
 	}
 	for name := range raw {
 		if !known[name] {
@@ -110,8 +117,11 @@ func validationMessage(field string) string {
 	case "observedAt":
 		return "observedAt must be an RFC 3339 timestamp with an explicit offset."
 	case "data":
-		return "This increment accepts only omitted data or an empty array."
+		return "data must be an array of at most 8 standalone measurements; samples, records and sequences are not supported yet."
 	default:
+		if strings.HasPrefix(field, "data[") || strings.HasPrefix(field, "dataDefaults") {
+			return measurementValidationMessage(field)
+		}
 		return fmt.Sprintf("The fields must match the version %d alert schema.", originalSchemaVersion)
 	}
 }

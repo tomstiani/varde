@@ -38,7 +38,7 @@ func TestValidationFailureResponsesRemainCompatible(t *testing.T) {
 		{"summary", strings.Replace(payload, "PRIVATE-BODY", strings.Repeat("x", 8193), 1), "summary", "invalid_field", "summary must be a string of at most 8,192 characters.", 422},
 		{"priority", strings.Replace(payload, `"high"`, `"PRIVATE-VALUE"`, 1), "priority", "invalid_field", "priority must be low, normal, high, or critical.", 422},
 		{"timestamp", strings.Replace(payload, "2026-01-01T12:00:00Z", "PRIVATE-VALUE", 1), "observedAt", "invalid_field", "observedAt must be an RFC 3339 timestamp with an explicit offset.", 422},
-		{"data", strings.TrimSuffix(payload, "}") + `,"data":["PRIVATE-VALUE"]}`, "data", "invalid_field", "This increment accepts only omitted data or an empty array.", 422},
+		{"data", strings.TrimSuffix(payload, "}") + `,"data":"PRIVATE-VALUE"}`, "data", "invalid_field", "data must be an array of at most 8 standalone measurements; samples, records and sequences are not supported yet.", 422},
 		{"unknown field", strings.TrimSuffix(payload, "}") + `,"PRIVATE-FIELD":"PRIVATE-VALUE"}`, "", "invalid_field", "The fields must match the version 1 alert schema.", 422},
 		{"malformed", `{"PRIVATE-FIELD":`, "", "invalid_json", "Supply one valid UTF-8 JSON value without duplicate object keys.", 400},
 		{"oversized", strings.Repeat(" ", lifecycle.MaxBodyBytes+1), "", "body_too_large", "The JSON body must not exceed 65,536 bytes.", 413},

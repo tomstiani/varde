@@ -11,7 +11,7 @@ data class AlertRow(
     val presentation: Presentation,
 )
 
-data class AlertDetail(val row: AlertRow, val summary: String)
+data class AlertDetail(val row: AlertRow, val summary: String, val richComponents: List<RichComponent> = emptyList())
 data class HistoryPage(val items: List<AlertRow>, val nextCursor: String? = null)
 data class ChangeEntry(val alertId: String, val kind: String, val revision: Int)
 data class ChangePage(val items: List<ChangeEntry>, val nextCursor: String, val hasMore: Boolean)

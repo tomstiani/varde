@@ -41,12 +41,7 @@ class HttpBackend(client: OkHttpClient = OkHttpClient()) : Backend {
     }
 
     override suspend fun read(connection: Connection, id: String): AlertDetail =
-        request(connection, connection.endpoint("v1", "alerts", id)) { json, _ ->
-            require(json.text("id") == id)
-            val original = json.getJSONObject("original")
-            require(original.get("schemaVersion") == 1)
-            AlertDetail(parseRow(json, original), original.text("summary"))
-        }
+        request(connection, connection.endpoint("v1", "alerts", id), parseText = { body -> decodeAlertDetail(body, id) })
 
     override suspend fun checkpoint(connection: Connection): String =
         request(connection, connection.endpoint("v1", "changes", "checkpoint"), recovery = true, method = "POST") { json, _ -> json.cursor("cursor") }
@@ -103,7 +98,8 @@ class HttpBackend(client: OkHttpClient = OkHttpClient()) : Backend {
         method: String = "GET",
         body: ByteArray? = null,
         mutation: PushMutation? = null,
-        parse: (JSONObject, Response) -> T,
+        parseText: ((String) -> T)? = null,
+        parse: (JSONObject, Response) -> T = { _, _ -> error("Missing response parser") },
     ): T =
         suspendCancellableCoroutine { continuation ->
             val request = Request.Builder().url(url)
@@ -135,7 +131,8 @@ class HttpBackend(client: OkHttpClient = OkHttpClient()) : Backend {
                             val body = it.body ?: throw InboxFailure(Problem.RESPONSE)
                             val source = body.source()
                             if (source.request(524_289)) throw InboxFailure(Problem.RESPONSE)
-                            parse(JSONObject(source.readUtf8()), it)
+                            val text = Charsets.UTF_8.newDecoder().decode(java.nio.ByteBuffer.wrap(source.readByteArray())).toString()
+                            parseText?.invoke(text) ?: parse(JSONObject(text), it)
                         }
                         continuation.resume(result)
                     } catch (failure: InboxFailure) {
@@ -148,6 +145,34 @@ class HttpBackend(client: OkHttpClient = OkHttpClient()) : Backend {
                 }
             })
         }
+}
+
+internal fun decodeAlertDetail(body: String, id: String): AlertDetail {
+    require(body.toByteArray(Charsets.UTF_8).size <= 131_072)
+    val root = ExactJson(body, originalsOnly = true).decode()
+    require(id.isNotBlank() && root.text("id") == id && root.duplicateKeys.all { it == "richView" })
+    val original = root["original"] as ExactObject
+    require(original["schemaVersion"] == ExactNumber("1"))
+    require(original.duplicateKeys.all { it == "data" || it == "dataDefaults" })
+    val presentation = root["presentation"] as ExactObject
+    require(presentation.duplicateKeys.isEmpty())
+    val revision = (presentation["revision"] as ExactNumber).token
+    require(revision == "0" || revision == "1")
+    val priority = original.text("priority")
+    require(priority in setOf("low", "normal", "high", "critical"))
+    val row = AlertRow(
+        id = id,
+        acceptedAt = root.text("acceptedAt"),
+        title = original.text("title"),
+        priority = priority,
+        observedAt = original.text("observedAt"),
+        presentation = decodePresentation(presentation.text("state"), revision.toInt()),
+    )
+    return AlertDetail(row, original.text("summary"), decodeRichComponents(body))
+}
+
+private fun ExactObject.text(name: String): String = (get(name) as String).also { value ->
+    require(value.codePoints().noneMatch { it in 0xD800..0xDFFF })
 }
 
 private fun transportFailure(error: IOException) = InboxFailure(if (error is SSLException) Problem.TLS else Problem.NETWORK)
@@ -200,12 +225,17 @@ private fun JSONObject.text(name: String): String = get(name).let {
 private fun parseRow(json: JSONObject, original: JSONObject = json): AlertRow {
     val presentation = json.getJSONObject("presentation")
     val revision = presentation.get("revision")
-    require(revision is Int && revision >= 0)
+    require(revision is Int)
     val state = presentation.text("state")
-    require(state in setOf("pending", "fallback"))
+    val decodedPresentation = decodePresentation(state, revision)
     val priority = original.text("priority")
     require(priority in setOf("low", "normal", "high", "critical"))
     val id = json.text("id")
     require(id.isNotBlank())
-    return AlertRow(id, json.text("acceptedAt"), original.text("title"), priority, original.text("observedAt"), Presentation(state, revision))
+    return AlertRow(id, json.text("acceptedAt"), original.text("title"), priority, original.text("observedAt"), decodedPresentation)
+}
+
+private fun decodePresentation(state: String, revision: Int): Presentation {
+    require((state == "pending" && revision == 0) || (state in setOf("fallback", "rich") && revision == 1))
+    return Presentation(state, revision)
 }

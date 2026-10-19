@@ -17,7 +17,7 @@ func decodeOriginalJSON(body []byte) (map[string]json.RawMessage, error) {
 	}
 	decoder := json.NewDecoder(bytes.NewReader(body))
 	decoder.UseNumber()
-	if err := walkJSON(decoder); err != nil {
+	if err := walkJSON(decoder, 0); err != nil {
 		return nil, failure("invalid_json")
 	}
 	if _, err := decoder.Token(); err != io.EOF {
@@ -31,7 +31,7 @@ func decodeOriginalJSON(body []byte) (map[string]json.RawMessage, error) {
 }
 
 // Token traversal detects duplicate keys before decoding can discard them.
-func walkJSON(decoder *json.Decoder) error {
+func walkJSON(decoder *json.Decoder, depth int) error {
 	token, err := decoder.Token()
 	if err != nil {
 		return err
@@ -39,6 +39,9 @@ func walkJSON(decoder *json.Decoder) error {
 	delimiter, isDelimiter := token.(json.Delim)
 	if !isDelimiter {
 		return nil
+	}
+	if depth >= 8 {
+		return io.ErrUnexpectedEOF
 	}
 	if delimiter != '{' && delimiter != '[' {
 		return io.ErrUnexpectedEOF
@@ -57,7 +60,7 @@ func walkJSON(decoder *json.Decoder) error {
 			}
 			keys[name] = true
 		}
-		if err := walkJSON(decoder); err != nil {
+		if err := walkJSON(decoder, depth+1); err != nil {
 			return err
 		}
 	}

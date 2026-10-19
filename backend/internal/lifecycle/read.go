@@ -25,10 +25,10 @@ func (s *Lifecycle) Read(ctx context.Context, token, id string) (Alert, error) {
 
 func readAlert(ctx context.Context, conn *sql.Conn, id string) (Alert, error) {
 	var alert Alert
-	var original []byte
+	var original, view []byte
 	err := conn.QueryRowContext(ctx,
-		"SELECT id,accepted_at,original,state,revision FROM alerts WHERE id=?", id,
-	).Scan(&alert.ID, &alert.AcceptedAt, &original, &alert.Presentation.State, &alert.Presentation.Revision)
+		"SELECT id,accepted_at,original,state,revision,rich_view FROM alerts WHERE id=?", id,
+	).Scan(&alert.ID, &alert.AcceptedAt, &original, &alert.Presentation.State, &alert.Presentation.Revision, &view)
 	if errors.Is(err, sql.ErrNoRows) {
 		return Alert{}, failure("not_found")
 	}
@@ -37,6 +37,12 @@ func readAlert(ctx context.Context, conn *sql.Conn, id string) (Alert, error) {
 	}
 	if err = json.Unmarshal(original, &alert.Original); err != nil {
 		return Alert{}, err
+	}
+	if alert.Presentation.State == "rich" {
+		alert.RichView = decodeRichView(view, alert.Original)
+		if alert.RichView == nil {
+			alert.Presentation.State = "fallback"
+		}
 	}
 	return alert, nil
 }

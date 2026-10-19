@@ -2,7 +2,7 @@
 
 Native Kotlin + Jetpack Compose. [Issue #12](https://github.com/tomstiani/varde/issues/12) established the first inbox; [issue #13](https://github.com/tomstiani/varde/issues/13) adds named connections and source-correct merging. [Issue #14](https://github.com/tomstiani/varde/issues/14) adds older-history browsing; [issue #15](https://github.com/tomstiani/varde/issues/15) adds explicit partial-outage recovery and retained in-memory details.
 
-**Not yet implemented:** real push, background recovery, rich views, AI, or durable offline alert content. [App-opening missed-alert recovery](../docs/how-to/recover-alerts.md) now uses authenticated change checkpoints and per-connection catch-up notifications. Two-backend transport tests and physical-phone USB setup/browsing are verified. Original remote HTTPS/n8n acceptance in #16 remains deferred; see the [verification record](../docs/verification/android-usb-acceptance.md).
+**Not yet implemented:** real push, background recovery, production rich generation, charts/tables/flows, AI, or durable offline alert content. The [standalone metric slice](../docs/how-to/submit-supplied-metric.md) reads and renders validated metrics and complete supplied summary text; backend rich publication is exercised through test-only selections. [App-opening missed-alert recovery](../docs/how-to/recover-alerts.md) now uses authenticated change checkpoints and per-connection catch-up notifications. Two-backend transport tests and physical-phone USB setup/browsing are verified. Original remote HTTPS/n8n acceptance in #16 remains deferred; see the [verification record](../docs/verification/android-usb-acceptance.md).
 
 The coordinator and settings now support [per-connection notification controls](../docs/how-to/control-notifications.md) through the [installation registration contract](../docs/how-to/register-push.md). Muting cancels local output immediately; re-enable and permission restoration require a fresh silent baseline. The production token source remains unconfigured until #23, so ordinary activation stays visibly pending. Real Go/SQLite tests use synthetic tokens to verify mutations, restart/replay, baselines, token refresh, isolated sources, partial outages and access replacement without contacting a provider. See the [local controls verification record](../docs/verification/android-notification-controls.md) for emulator results and unverified live checks.
 
@@ -10,7 +10,7 @@ A [debug-only local notification path](../docs/how-to/test-local-notifications.m
 
 For the simplest local phone test, follow [two-backend USB acceptance](../docs/how-to/local-acceptance.md). It needs no homelab connection or tailnet changes.
 
-The [approved rich-alert contracts](../docs/specs/rich-alert-contracts.md) define the future typed-data/view grammar and coordinated backend/Android upgrades without backward-version support. This is contract delivery, not implemented rich rendering or live AI integration; [#38](https://github.com/tomstiani/varde/issues/38) tracks the implementation slices.
+The [approved rich-alert contracts](../docs/specs/rich-alert-contracts.md) define the complete typed-data/view grammar and coordinated backend/Android upgrades without backward-version support. The current staged slice supports standalone metrics and exact summary text, with whole-view fallback for malformed or unsupported rich content. [#38](https://github.com/tomstiani/varde/issues/38) tracks later rendering and generation slices; no live AI integration is implemented.
 
 ## Prerequisites
 

@@ -1,6 +1,7 @@
 package lifecycle
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"encoding/json"
@@ -9,6 +10,7 @@ import (
 )
 
 func (s *Lifecycle) Submit(ctx context.Context, token string, body []byte) (Alert, bool, error) {
+	original, validationErr := decodeOriginal(body)
 	var result Alert
 	created := false
 	err := s.transaction(ctx, func(conn *sql.Conn) error {
@@ -16,11 +18,10 @@ func (s *Lifecycle) Submit(ctx context.Context, token string, body []byte) (Aler
 		if err != nil {
 			return err
 		}
-		original, err := decodeOriginal(body)
-		if err != nil {
-			return err
+		if validationErr != nil {
+			return validationErr
 		}
-		canonical, err := json.Marshal(original)
+		canonical, err := encodeOriginal(original)
 		if err != nil {
 			return err
 		}
@@ -54,6 +55,17 @@ func (s *Lifecycle) Submit(ctx context.Context, token string, body []byte) (Aler
 	return result, created, nil
 }
 
+func encodeOriginal(original Original) ([]byte, error) {
+	var buffer bytes.Buffer
+	encoder := json.NewEncoder(&buffer)
+	// Originals are JSON, not HTML; escaping supplied labels can exceed the detail byte bound.
+	encoder.SetEscapeHTML(false)
+	if err := encoder.Encode(original); err != nil {
+		return nil, err
+	}
+	return bytes.TrimSuffix(buffer.Bytes(), []byte("\n")), nil
+}
+
 func findDuplicate(ctx context.Context, conn *sql.Conn, owner, eventID string, canonical []byte) (Alert, bool, error) {
 	var id string
 	var previous []byte
@@ -67,7 +79,7 @@ func findDuplicate(ctx context.Context, conn *sql.Conn, owner, eventID string, c
 	if err != nil {
 		return Alert{}, false, err
 	}
-	if string(previous) != string(canonical) {
+	if !equivalentOriginals(previous, canonical) {
 		return Alert{}, true, failure("identity_conflict")
 	}
 	alert, err := readAlert(ctx, conn, id)

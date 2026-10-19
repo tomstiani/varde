@@ -31,6 +31,7 @@ type Original struct {
 	Priority      string            `json:"priority"`
 	ObservedAt    string            `json:"observedAt"`
 	Data          []json.RawMessage `json:"data"`
+	DataDefaults  json.RawMessage   `json:"dataDefaults,omitempty"`
 }
 
 type Presentation struct {
@@ -43,4 +44,5 @@ type Alert struct {
 	AcceptedAt   string       `json:"acceptedAt"`
 	Original     Original     `json:"original"`
 	Presentation Presentation `json:"presentation"`
+	RichView     *RichView    `json:"richView,omitempty"`
 }
