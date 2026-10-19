@@ -116,7 +116,7 @@ HTTP bearer credentials are appropriate here only because the executable binds t
 | `observedAt` | RFC 3339 timestamp with explicit timezone; submitted spelling is preserved |
 | `data` | Omitted or `[]` only in this increment |
 
-Reject unknown fields, duplicate JSON object keys, invalid encoding, and incorrect types. Do not trim or rewrite submitted strings. Nonempty `data` is explicitly unsupported until the typed-data increment; the full release's eight-entry allowance is not yet implemented.
+Reject unknown fields, duplicate JSON object keys, invalid encoding, and incorrect types. Do not trim or rewrite submitted strings. Nonempty `data` is explicitly unsupported until the typed-data increment. The [approved #39 contracts](../specs/rich-alert-contracts.md) define optional typed entries, Jev BYOK and rich views, but their eight-entry allowance, generation flag and secret-file configuration are not implemented by this executable. Do not use the contract examples as runnable requests or setup commands yet.
 
 A new alert returns `201`. The response contains `id`, `acceptedAt`, `original`, and `presentation`. Presentation initially has `state: "pending"` and `revision: 0`; the worker completes it as `state: "fallback"` and `revision: 1`. The fallback reason is stored internally as `model_not_configured`, not exposed as a private diagnostic record to installations.
 

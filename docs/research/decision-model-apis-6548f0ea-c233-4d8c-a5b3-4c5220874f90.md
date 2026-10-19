@@ -2,7 +2,7 @@
 
 **Research status:** Partial, source-grounded review. The OpenAI product can be identified with high confidence as the **Decisions API**. “Jev” is ambiguous: there are at least two plausible, materially different products, and the user's visual-composition description best matches a third-party demo/integration rather than the Jev model API itself. Do not treat similarly named products as interchangeable.
 
-> Historical survey: this predates confirmation of the intended TypeSafe/json-render example. For the subsequently tested provider and observed behavior, see [alert-view experiment findings](alert-view-experiments.md). Product identity questions below are not current implementation decisions.
+> Historical survey: this predates confirmation of the intended TypeSafe/json-render example. For the subsequently tested provider and observed behavior, see [alert-view experiment findings](alert-view-experiments.md). The later [approved #39 contracts](../specs/rich-alert-contracts.md) select native TypeSafe `jev-1.13.0` only, with backend-owned BYOK; a generalized provider contract, OpenAI adapter and reasoning handoff are deferred. Product identity questions and recommendations below are historical, not current implementation instructions.
 
 ## Executive summary
 

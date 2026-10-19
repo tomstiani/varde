@@ -2,179 +2,167 @@
 
 Request ID: `d01c3433-5b78-40d5-afcd-467f0d0b97c7`
 
-## Recommendation and evidence status
+Reconciled and primary sources retrieved: **2026-10-19 UTC**. Related: [#6](https://github.com/tomstiani/varde/issues/6), [#1](https://github.com/tomstiani/varde/issues/1).
 
-**Benchmark three candidates, without choosing a vendor:** OpenAI **GPT-5 nano**, Google **Gemini 3.1 Flash-Lite** on the paid Developer API, and Anthropic **Claude Haiku 5.5** on its direct API. Add **GPT-5.6 Luna** as an optional contemporary OpenAI comparison.
+## Recommendation and subsequent design discussion
 
-Use a replaceable backend adapter, a provider-independent view contract, deterministic validation, and original-text fallback. The model should select and order supplied information, not invent an interface or diagnose the homelab.
+**Use one bounded Jev selection call over backend-prepared candidates, not model-authored component data.** The user's subsequent design answers select backend-owned BYOK, **Jev only initially, pinned to `jev-1.13.0`**, and defer a generalized provider contract or second adapter. The user confirmed this first-release strategy on 2026-10-19; see the [consolidated BYOK design](hosted-model-byok.md) for decisions and explicit prerequisites. No production enablement or live benchmark is authorized.
 
-**Evidence:** model support, rates, and policies below were checked against directly fetched owner documentation. **Inference/proposal:** architectural choices, limits, benchmark design, and selection rationale. **Unknown:** actual access, latency, fidelity, token usage, account-specific retention arrangements, and quotas. No authenticated or paid model calls, credentials, implementation work, or GitHub changes were performed.
+Jev has the only retained Varde-specific selection observations and the lowest listed input-only price in this comparison. Its unresolved standard retention duration must be disclosed, but the user explicitly leaves acceptance of provider retention to the operator rather than making uncertainty a product-enforced prohibition. Synthetic quality evaluation remains necessary. Finite per-candidate omit/position choices let deterministic code assemble/order the view; test relevance, ties and overflow. [T1–T4]
 
-**Freshness caveat:** fetched owner pages superseded older search summaries. Google’s stable 3.5 Flash-Lite page is labeled July 2026; Anthropic’s Haiku 5.5 page states October 7, 2026. This report follows the pages actually served, not a remembered model catalog. Recheck links, account access, lifecycle status, and pricing before execution. Documentation-listed availability is not universal account eligibility. [G1][A1]
+OpenAI `gpt-6-luna` Responses with strict Structured Outputs remains an alternative for a single global ordered-ID list, **not the recommended default**. Its convenient ordering does not establish enough quality benefit to justify its higher assumed cost. If evaluated, start with `reasoning.effort: none`, `store: false`, no tools or routing/brief call; exact settings and quality remain untested. [O1][O2]
 
-## 1. Contract and data fidelity
+**The strategy and concrete contracts are approved; runtime implementation and production enablement are not established.** [#39](https://github.com/tomstiani/varde/issues/39) delivered the approved [typed-data/view/Jev/configuration/execution contracts](../specs/rich-alert-contracts.md), including no backward-version support. Implementation and reproducible evaluation remain necessary; no provider has demonstrated production suitability here. Hosted generation stays disabled by default. Retention acceptance belongs to the operator; BYOK does not establish zero retention or account eligibility.
 
-The requested contract is the foundation, not a claim about existing implementation:
+No live or paid model calls, private credentials, real alerts or deployment were used. Public-source research was followed by separately approved GitHub publication of #38/#39–#46 and contract reconciliation/closure of #39; those are documentation/decision delivery, not model integration. Issue #6 remains open and unchanged. Notification and acceptance issues were not modified.
 
-- A versioned envelope contains one **ordered component list**. Allowed types: plain text, metrics, line charts, tables, and simple flows.
-- Android owns styling, sizing, rendering, and accessibility. No generated layout instructions, executable code, HTML, SVG, Mermaid, expressions, arbitrary diagrams, or nested UI components.
-- Original **title, summary, priority, and timestamp stay outside generation**, unchanged and available for fallback.
-- Input is the alert payload only: no history lookup, monitoring queries, retrieval, browsing, or tools.
-- Use supplied values only. No fabricated measurements, missing-data estimates, inferred timestamps, unit conversions, or derived aggregates in v1.
-- An invalid whole view falls back to original text. Never salvage valid-looking components from a failed view or display partial streamed JSON.
+## 1. Reconciliation with existing work
 
-### Proposed representation
+| Evidence | What it establishes | What it does not establish |
+| --- | --- | --- |
+| [#4 resolution](https://github.com/tomstiani/varde/issues/4#issuecomment-6188080441), read live 2026-10-19 | Approved versioned ordered text/metrics/line-chart/table/simple-flow components; Android owns style; originals separate; supplied measurements only; invalid whole-view fallback | Exact field schemas, limits, visual design or a model choice |
+| [Alert-view experiments](alert-view-experiments.md) | Historical synthetic TypeSafe `jev-1.13.0` observations: stricter relevance prompt met ten proposed selection/fallback outcomes | Reproducibility from this checkout, repeatability, independently adjudicated quality, production p95 or privacy suitability |
+| [Backend architecture](../architecture/backend.md) | Prepared candidates, native Jev separation, durable attempt accounting and bounded retries; reconciled to #39 | Implemented rich generation or measured production suitability |
+| [Approved #39 contracts](../specs/rich-alert-contracts.md) | Concrete input/view/selection/configuration grammar, resource bounds, execution rules and later evaluation targets | Runtime implementation, completed model evaluation or production enablement |
+| Earlier version of this report | Useful fidelity rules, source survey and synthetic benchmark design | Its three-vendor benchmark-only conclusion was not a settled strategy |
+| [Decision-model API survey](decision-model-apis-6548f0ea-c233-4d8c-a5b3-4c5220874f90.md) | Historical investigation of typed decisions | Its Jev identity ambiguity is not a current blocker: later experiments explicitly used TypeSafe, whose owner docs are reviewed here |
 
-Use an envelope such as `schemaVersion: "1"` and `components: [...]`. Ordinary typed component data does not constitute nested UI containers.
+This revision extends the existing report rather than creating a competing decision record. It adds TypeSafe and current OpenAI Decisions to the comparison and narrows generation to prepared-candidate selection. The subsequent user discussion selected Jev-only BYOK initially; other providers remain comparative research, not implementation targets. The former optional GPT-5.6 Luna comparison is replaced by GPT-6 Luna, now documented at lower rates; that does not prove better Varde quality. [O1][O5]
 
-Prefer **references to supplied fields** over model-copied numbers. A metric selects a supplied value/unit; a chart selects a supplied series; a table selects supplied rows/columns. Resolve references deterministically against a payload-derived allowlist. References are data identifiers, never executable paths or expressions.
+Two stale statements in the earlier report must not guide implementation:
 
-Reference existence alone is insufficient: validate value/unit/time/source associations. Identical numbers from different sources are not interchangeable. Use fixed schema structure rather than per-alert schema enums initially; Claude documents compilation/cache effects when schema structure changes. [A2]
+- **Notification timing is settled separately**, not deferred by model benchmarking. Live #1 confirms the #19 policy: do not wait for rich generation; silent enrichment follows authenticated fetch. This research neither reopens that policy nor changes #22–#25.
+- The earlier suggestion of at most one transient retry is **not the selected policy**. Retain one initial paid-step attempt plus at most three durable transient repeats. The user explicitly removed the architecture proposal's daily model-attempt ceiling and rejected Varde financial-budget enforcement; operators manage financial controls through their provider account/key. Baseline benchmarking can use one attempt without changing retry policy. Invalid output is not retried.
 
-For text and labels, prefer supplied strings or extractive spans. Free paraphrases can introduce unsupported causal claims despite perfect numeric fidelity. Do not interpret text as markup.
+## 2. Approved output strategy and remaining evidence gates
 
-For charts, preserve supplied samples and gaps; do not interpolate, smooth, or connect across missing measurements as if observed. Omit unsupported charts. A simple flow is an explicitly supplied ordered sequence, not inferred topology or causality; no branching or cycles.
+The backend prepares approved candidates from optional supplied typed facts. Jev selects relevance/order only: one finite omit/p0–p7 choice per candidate, batched into a single request per attempt. Stable catalog order breaks position ties. Candidate descriptions are untrusted data, never instructions. Empty selection is original-text fallback; invalid selection is a distinct diagnostic outcome.
 
-**Proposed benchmark limits, not settled product requirements:** 8 components, 160 characters per text block, 3 chart series with 120 points each, 20 table rows with 6 columns, and 8 sequential flow steps. Enforce locally. If limits require dropping data, use a documented deterministic subset without implying completeness, or fall back. Empty/no-useful views also fall back.
+The model response is **not** the Android rich-view contract. Deterministic assembly publishes a versioned ordered list of reference-only metric, lineChart, table, flow and exact-summary text components. Every reference must identify an offered candidate bound to the retained original; invalidity anywhere rejects the whole view. There is no generated code, markup, arbitrary positioning, nesting, extraction LLM or homelab lookup.
 
-**Inference:** this constrained selection-and-ordering task is a plausible small-model workload. No reviewed source establishes Varde-specific quality or latency.
+[#39](../specs/rich-alert-contracts.md) now defines the exact fields and bounds: optional measurements/history, records and sequences; explicit source/resource/collector inheritance; exact decimal values and typed timestamps; 17 candidate maximum; 8 selected components; 48-KiB request/32-KiB response caps; 10-second selection attempt and five-second shutdown allowance. One series per chart initially, no backward-version support, no Varde financial/daily model quota. Plain-text/no-useful-data alerts bypass Jev.
 
-## 2. Candidate comparison
+The remaining gates are **implementation, deterministic validation through the approved test seams, useful-selection evaluation and explicit production enablement**. The 18 synthetic contract examples and frozen request artifact were checked locally for consistency; they are not a production validator, SQLite/Android test run or model-quality result. A future requirement for generated prose or fact extraction would require revisiting this strategy.
 
-Prices: **USD per 1,000,000 tokens**, standard synchronous text requests, uncached input, excluding taxes. These are documented rates, not measured costs.
+## 3. Current capability and cost comparison
 
-| Candidate | Verified price and capability | Benchmark role / uncertainty |
-|---|---|---|
-| OpenAI `gpt-5-nano-2025-08-07` | **$0.05 input / $0.40 output**; Structured Outputs, Responses and Chat Completions. [O1] | Cost-floor candidate. Vendor calls it fastest/cheapest within GPT-5; that is not a cross-provider latency result. Reasoning usage may dominate short JSON. |
-| Google `gemini-3.1-flash-lite` | Stable; structured outputs. **$0.25 input / $1.50 output**, including thinking tokens. [G2][G3] | Independent cost-efficient extraction candidate. Access, thinking settings and exact schema acceptance need testing. |
-| Anthropic `claude-haiku-5-5` | Structured outputs; positioned for latency-sensitive extraction/routing. **$0.10 input / $0.50 output** for prompts up to 100,000 tokens; **$0.50 / $2.50** above that threshold. [A1][A2][A3] | Strong listed small-prompt pricing; schema restrictions and retention wording deserve attention. |
-| Optional OpenAI `gpt-5.6-luna` | **$0.20 input / $1.20 output**; Structured Outputs; supports `reasoning.effort: none`. OpenAI recommends it for most new speed/cost-sensitive workloads. [O1][O2] | Contemporary control against older nano; compare cost per accepted view, not token rates alone. |
+Documented claims below were retrieved from owner pages on 2026-10-19, not inferred from model names or search summaries. Rates are standard synchronous text, **USD per million tokens**, uncached, excluding taxes, regional premiums and negotiated discounts. Availability in docs does not establish access or quota for this user's account.
 
-Google also lists stable `gemini-3.5-flash-lite` with structured outputs at **$0.30 input / $2.50 output**. It is not in the first cost-focused round because no Varde evidence yet establishes a benefit from the higher rates. [G1][G3]
+| Candidate | Structured approach / constraints | Input / output rate | First-release assessment |
+| --- | --- | --- | --- |
+| **OpenAI `gpt-6-luna`, Responses** | Strict JSON Schema subset; ordered candidate-ID array in one object. Supports `reasoning.effort: none`. [O1][O2] | **$0.10 / $0.50**, prompts ≤272K input tokens. [O1] | Alternative if global ordering justifies higher cost; no measured Varde quality/latency. |
+| OpenAI `gpt-5-nano-2025-08-07` | Structured Outputs; reproducible dated snapshot; reasoning tokens can add billed output. [O3] | **$0.05 / $0.40** | Cheaper token-rate control, not excluded as obsolete; compare accepted-view cost and reasoning overhead rather than rates alone. |
+| **TypeSafe `jev-1.13.0`** | `choice` (≤255 options), `noul` and `score` answers, not arbitrary JSON Schema generation. 64K request / 32K per question by default. [T1][T2] | **$0.042 / free** | Selected initial provider in the design discussion; production enablement still pending. Per-candidate choices require tested relevance/order handling. |
+| OpenAI Decisions, `gpt-6-luna` | Public beta; predicate/choice/score endpoint, distinct from Responses. Application assembles the view and interprets probabilities. [O4] | **$0.10 / free** for Decisions, before regional/long-context adjustments | Possible bounded-choice challenger, not needed as a preliminary routing call. No Varde measurements; beta adds lifecycle risk. |
+| Anthropic `claude-haiku-5-5` | JSON output via `output_config.format`; limited schema constraints and compilation behavior below. [A1][A2] | **$0.10 / $0.50** for prompts ≤100K tokens; $0.50 / $2.50 above | Competitive documented price; no Varde quality evidence. Retention wording requires clarification. Adaptive thinking defaults on. |
+| Paid Gemini Developer API `gemini-3.1-flash-lite` | JSON Schema subset including array bounds; large/deep schemas can be rejected. [G1][G2] | **$0.25 / $1.50**, output includes thinking. [G3] | Technically plausible; higher listed rates and unresolved professional/business-only eligibility for a personal homelab. |
 
-### Schema limitations
+TypeSafe lists `jev-1.14.0` as newest (October 14), but `jev-latest` still points to 1.13 and `jev-preview` to 1.14. Pin 1.13 to reproduce prior observations; evaluate 1.14 separately rather than silently attributing old results to it. [T1]
 
-- **OpenAI:** use strict Structured Outputs, not plain JSON mode. The root must be an object, not root `anyOf`; all fields must be required, with nullable types for optional values; objects require `additionalProperties: false`. Nested unions can represent components below the envelope. Refusals and incomplete responses require explicit handling. [O3]
-- **Google:** supports a JSON Schema subset including objects, arrays, required fields, enums, nullable values and numerical/array bounds. Very large/deep schemas can be rejected. Google explicitly requires application validation for semantically incorrect values. [G4]
-- **Anthropic:** JSON output uses `output_config.format`; objects require `additionalProperties: false`. Supports basic types and unions, but not recursive schemas, numerical bounds, string-length bounds, or general array limits beyond `minItems` 0/1. Unsupported constraints can cause HTTP 400; SDK transformations may remove unsupported constraints, so inspect the transmitted schema. [A2]
-- Claude documents initial schema-compilation overhead, grammar caching for 24 hours since last use, extra billed schema-guidance input, and refusal/truncation exceptions. It also documents possible enum capitalization differences: Varde should reject noncanonical values rather than silently relax its contract. [A2]
+This is a focused comparison of small-model and bounded-decision options, not an exhaustive catalog. Recheck lifecycle, account access and rates immediately before any authorized execution.
 
-**Proposal:** keep a full canonical local validator and explicit provider schema projections. Verify the exact component-array union against each service. Enforce bounds, reference integrity and cross-field semantics locally even where a provider supports corresponding constraints. Schema conformity is not data fidelity.
+### Schema constraints and failure exceptions
 
-## 3. Privacy and deployment suitability
+- **OpenAI:** root must be an object, not root `anyOf`; all fields required (nullable for optional values); objects need `additionalProperties: false`. Documented maxima include 5,000 object properties, 10 nesting levels and 1,000 enum values across the schema. Refusals and incomplete responses are outside the successful-schema path. Strict mode is not ordinary JSON mode, and does not prove semantic fidelity. [O2]
+- **Claude:** requires `additionalProperties: false`; supports basic types/unions but not recursive schemas, numerical bounds, string-length bounds or array constraints beyond `minItems` 0/1. Unsupported constraints can return 400; SDKs may transform them into descriptions rather than wire constraints. Initial schema compilation adds latency; grammars cache for 24 hours since last use. Injected schema guidance adds billed input tokens. Refusal or `max_tokens` can bypass schema conformity; docs also warn about enum casing differences. Reject noncanonical IDs locally rather than guessing corrections. [A2]
+- **Gemini:** supports basic object/array types, required fields, nullable values, enums and min/max item constraints. Docs explicitly require application validation for semantically incorrect output. Exact schema compatibility still needs a future conformance probe. [G2]
+- **TypeSafe:** returns typed question answers/probabilities, not the final component envelope. Request limits include 32 MiB and 64 nested levels; reject invalid/missing answers and out-of-catalog choices locally. Provider limits are ceilings, not sensible Varde payload limits. SDKs automatically retry rate limits/overload unless controlled. [T1][T2]
 
-Self-hosting the backend does not keep model-bound alert content local. Alert payloads can contain credentials, hostnames, addresses and log details; hosted generation is a disclosure decision.
+Maintain a canonical local validator and explicit native Jev translation. Generalized cross-provider schema projections are deferred. Never weaken local validation to fit a provider.
 
-| Service | Verified policy | Consequence |
-|---|---|---|
-| OpenAI API | No training on API data unless opted in. Abuse logs may contain prompts/responses and normally last up to **30 days**, with exceptions. ZDR/Modified Abuse Monitoring require approval. Responses has default application-state storage; `store: false` does not eliminate abuse logs or all caching retention. [O4] | Set `store: false`; avoid background/stateful features, files and tools. Do not promise zero storage. |
-| Paid Gemini Developer API | Paid prompts/responses are not used to improve products. Abuse monitoring retains prompts/context/output for **55 days**; authorized review can occur for flagged content. Terms allow transient storage/caching where Google or agents operate. Unpaid services have different data-use terms and regional exceptions. [G5][G6] | Use an active billing-linked project for real data; avoid unpaid/Contributor/data-sharing modes. Terms restrict use to professional/business purposes, not consumer use: personal homelab eligibility is an unresolved gate, not solved by enabling billing. |
-| Direct Claude API | Commercial data is not used for training absent permission. Privacy support gives deletion within **30 days**, with feature/agreement/policy/legal exceptions. Platform docs separately say conversation content is not retained by default except Covered Models and describe separately enabled ZDR. Haiku 5.5 is not named among Covered Models. [A4][A5][A6] | Owner wording is not fully reconciled. Conservatively disclose standard 30-day retention plus exceptions until confirmed for the account; do not advertise default ZDR. Schema artifacts have separate retention implications. [A2][A5] |
+### Illustrative cost, not measured spending
 
-**Proposal:** explicit opt-in, backend-only API credentials, local field allowlisting/secret stripping, body logging disabled by default, and pseudonymization where practical. Keep identity mappings local. Do not automatically fail over to another provider without separate disclosure/approval.
+Assume 2,000 billed input tokens and 500 billed output tokens per attempt for generative endpoints; TypeSafe/Decisions bill input only. Schema guidance and reasoning must fit those totals for the example to apply. Tokenizers differ. Formula: `(input × input_rate + billed_output × output_rate) / 1,000,000`.
 
-**Unknown:** personal-user eligibility, ZDR access, region-specific routing, contractual terms and legal obligations. These remain deployment gates.
+| Candidate | USD / attempt | USD / 10,000 attempts |
+| --- | ---: | ---: |
+| GPT-6 Luna Responses | 0.000450 | 4.50 |
+| GPT-5 nano | 0.000300 | 3.00 |
+| TypeSafe Jev | 0.000084 | 0.84 |
+| OpenAI Decisions | 0.000200 | 2.00 |
+| Haiku 5.5, small-prompt tier | 0.000450 | 4.50 |
+| Gemini 3.1 Flash-Lite | 0.001250 | 12.50 |
 
-## 4. Explicit cost assumptions
+Independent per-candidate questions can change input size; these equal-token examples are not equal-work benchmarks. Retries, reasoning, schema guidance and timeout charges can increase cost. Four equal-cost attempts multiply per-alert spend by four. Report total spend / accepted useful views as well as cost / attempt. A timed-out call with missing usage has unknown cost, not zero.
 
-Assume **2,000 billed input tokens** including instructions/schema/payload, and **500 billed output tokens** per attempt. No cache, tools, retries, batch discounts or extra thinking beyond those 500 billed output tokens. Tokenizers differ; equal payload bytes need not mean equal tokens. Google output prices include thinking, and OpenAI reasoning tokens are billed as output. [G3][O5]
+## 4. Privacy: hosted selection still discloses alert data
 
-`USD = (input_tokens × input_rate + billed_output_tokens × output_rate) / 1,000,000`
+No-training policies are not no-storage policies. Even selecting IDs requires sending alert context and candidate descriptions. Self-hosting the homelab backend does not keep that context local.
 
-| Model | Assumed cost/attempt | 1,000 attempts | 10,000 attempts |
-|---|---:|---:|---:|
-| GPT-5 nano | $0.000300 | $0.30 | $3.00 |
-| Gemini 3.1 Flash-Lite | $0.001250 | $1.25 | $12.50 |
-| Haiku 5.5, small-prompt tier | $0.000450 | $0.45 | $4.50 |
-| Optional Luna | $0.001000 | $1.00 | $10.00 |
+| Service | Owner-documented handling | Unresolved deployment consequence |
+| --- | --- | --- |
+| OpenAI API | Not used for training unless opted in; abuse logs normally up to 30 days, with legal/harm-prevention exceptions. Responses stores application state for 30 days by default; use `store: false`. Prompt caching can separately retain encrypted KV tensors up to 24 hours; `store: false` does not disable that. GPT-5.6+ cache TTL controls minimum lifetime, not maximum retention. ZDR/MAM need approval. Structured-output schemas count as system data, outside residency coverage. [O6] | Accept disclosure/retention explicitly; no default ZDR or EU-only-processing promise. Do not put alert-specific facts into schemas. Account/region arrangements remain unverified. |
+| TypeSafe | Docs say requests/responses are not used for training and enterprise ZDR is available. The DPA says personal data is retained as long as necessary for processing purposes and applicable law; reviewed public materials do not establish a fixed standard prompt/response deletion window. [T1][T3][T4] | Disclose the unresolved standard retention window and region handling; operator acceptance governs enablement. Enterprise ZDR cannot be assumed for a personal account. |
+| Direct Claude API | Commercial data not trained on absent permission/other stated exceptions. Privacy support says automatic deletion within 30 days, with policy/legal/feature exceptions; flagged content can persist up to two years. Platform docs instead say conversation content is not retained by default except Covered Models; structured-output docs say prompts/responses use ZDR while schema artifacts cache up to 24 hours. Haiku is not in the reviewed Covered Models list. [A2–A5] | Wording is not fully reconciled. Do not advertise default ZDR or an unconditional 30-day ceiling; clarify account/model/feature terms before use. |
+| Paid Gemini Developer API | Paid prompts/responses not used to improve products; abuse monitoring retains prompts/context/output 55 days with possible authorized review. Terms allow transient caching where Google/agents operate. Unpaid services have different data-use terms and regional exceptions. [G4][G5] | Paid billing-linked project only for any eventual real-data use; no Contributor/data-sharing mode. Professional/business-only terms make personal-homelab eligibility a separate unresolved gate. |
 
-A retry on 5% of alerts multiplies cost by **1.05** only if token usage is identical. Also report total spend divided by accepted views. Timeout cancellation is not a billing guarantee. These examples exclude backend hosting, taxes, regional premiums, credits and negotiated discounts. Actual reasoning and larger tables/charts can exceed the assumptions; there are no measured costs here.
+Proposed deployment safeguards: explicit hosted-generation opt-in, minimal field allowlist, local pseudonymization and secret stripping, backend-only credentials, no body logging or raw response telemetry, and no automatic cross-provider failover. Secret detection is imperfect: allowlisting and user consent still matter. Never send credentials, unrestricted logs, real host identifiers or unrelated alert history by default. Keep identity mappings local. No provisioning or provider contact is authorized by this report.
 
-## 5. Validation, retry and fallback strategy
+## 5. Latency evidence and deterministic failure handling
 
-**Proposed pipeline:** preflight → bounded provider request → terminal-response check → strict parsing/schema validation → fidelity/reference validation → rendering-bound validation → atomic complete-view publication.
+**Measured in this revision: nothing.** The historical TypeSafe experiments report median individual-request durations around 244–256 ms on small synthetic runs. Raw reports/fixtures are not retained here. Those observations do not establish p95, full-pipeline latency, production reliability, or speed relative to OpenAI/Claude/Gemini.
 
-- Preserve original text independently of generation. Preflight malformed or oversized input can bypass the provider immediately.
-- Treat alert strings as untrusted data, never instructions; enable no tools and follow no embedded URLs.
-- Reject duplicate keys, trailing material, extra fields, wrong versions, unsupported components, nested UI, nonfinite values, invalid references, changed units/times/sources, missing-data estimates and invented flow links. Validate prose too.
-- Refusal, truncation, authentication/quota/API error, invalid output or deadline expiry returns original text. Never repair a measurement or silently drop an invalid component.
-- Begin with **no model repair retry for invalid views**, respecting immediate whole-view fallback and creating a clean first-attempt baseline.
-- Separately evaluate at most one transient transport/429/5xx retry when `Retry-After` and remaining deadline permit. No retries for invalid schema, authentication/permission, refusal, malformed source or fidelity failure. Disable or record SDK automatic retries.
-- Use one monotonic deadline covering backend queueing, connection, generation, validation and allowed retries. Probe **2, 5 and 10 seconds** as benchmark operating points, not promises. Cancel best-effort on expiry; finalize fallback and ignore late results.
-- Bound concurrency/pending work and deduplicate by alert revision, schema, prompt and model configuration. Cache only validated complete views; exclude cache hits from generation percentiles.
+**Documented claims:** OpenAI describes Decisions as about 10× faster than Responses; Claude describes Haiku as fastest relative to its lineup and documents initial grammar-compilation overhead; Gemini describes Flash-Lite as cost-efficient. These are vendor claims with different workloads, not comparable Varde latency results. No numeric release latency SLO is justified. [O4][A1][A2][G1]
 
-The production timeout and retry choice remain open. Token caps and reasoning parameters differ by API; record actual settings rather than assuming interchangeable controls.
+Proposed pipeline: bounded preflight → candidate preparation → one bounded provider step → check terminal status → strict parse → selection validation → deterministic assembly → complete rich-view validation → atomic publication.
 
-## 6. Reproducible benchmark proposal
+- Originals remain readable unchanged throughout. No model output overwrites title, summary, priority or event timestamp.
+- Reject malformed/oversized submitted typed input before acceptance; never silently discard invalid entries. Accepted alerts without useful typed data bypass Jev and retain original text. Treat embedded instructions as data; enable no tools or external URL fetches.
+- Reject duplicate JSON keys, trailing data, unknown fields/versions/IDs, duplicate selection, invalid order, nonfinite values, changed source/unit/time associations, invented measurements or flow links, and any invalid assembled component. Never repair a value or salvage a valid-looking subset.
+- Refusal, truncation, invalid selection or invalid rich view produces deterministic **whole-view fallback to unchanged original text**. Do not publish partial streamed JSON. Intentional empty selection is valid fallback but not a useful-rich-view success.
+- Permanent configuration/auth/schema errors and exhausted transient attempts produce terminal fallback. Existing text remains available while transient work is pending.
+- Follow the backend proposal's durable per-step retry policy: one initial attempt plus up to three repeats, approximately 5 s / 30 s / 2 min delays with jitter; honor longer `Retry-After` up to 15 min, otherwise terminal fallback. Invalid generated output has no repair retry. Persist reservations/uncertain attempts and successful steps; disable hidden SDK retries so they cannot bypass budgets.
+- Keep bounded operational concurrency and request sizes; initially one locally in-flight request. **The user removed the daily model-attempt ceiling and rejected application dollar-spend enforcement.** Provider account/key financial controls remain the operator's responsibility. Paid execution is not implemented by the current worker.
+- Bound each request's queue/network/generation/validation time; cancellation is best effort and not a billing guarantee. Ignore late results from an expired attempt. An overall presentation-age deadline, if desired, needs a separate policy consistent with durable transient retries.
 
-### Fixed synthetic corpus
+Isolate native Jev access from presentation logic, but defer a generalized `DecisionModel` contract and other adapters until another provider is considered. No optional `LLM` call initially. The presentation module owns candidates, reference resolution, validation and fallback; provider adapters own wire schemas, errors and transport, not alert history. Record model/prompt/schema/candidate revision and non-content outcome/usage metadata. Model changes require re-evaluation, not automatic promotion. None of this requires an AI Gateway or json-render runtime dependency.
 
-Use **40 fixtures**, ten per family, with fixed IDs, seed, canonical bytes/hashes, source-fact oracle, and small/medium/near-limit sizes. Allow multiple valid component layouts.
+## 6. Future opt-in synthetic benchmark — not authorized or run
 
-| Family | Synthetic cases | Oracle |
-|---|---|---|
-| Metric + trend | CPU 83 `%` and supplied timestamped samples 20, 40, 83; multiple series, gaps, duplicate/unsorted timestamps, mixed units. | Exact source/value/unit/time binding; no fabricated points or interpolation. Any sorting must be deterministic and documented. |
-| Table + flow | Service state/latency rows and explicit ordered sequence `sensor → broker → consumer`; absent-relationship variants. | Preserve rows/columns; no invented edges, state or root cause. |
-| Sparse | Text-only, missing unit, null value, empty series, unavailable measurement. | Omit unsupported components; never invent history, units or estimates; empty/no-useful output falls back. |
-| Malformed/adversarial | Invalid JSON/types, NaN-like strings, oversized arrays, duplicate keys, control characters, Unicode, missing references, embedded instructions to invent data. | Preflight-invalid cases make zero model calls; valid adversarial strings cannot change instructions; invalid output falls back atomically. |
+First prepare an offline, committed corpus and validator tests. The throwaway experiments are useful evidence but cannot substitute for reproducible fixtures. No real alert, provider credentials or live model call is needed for this preparation.
 
-These values define synthetic fixtures, not observed measurements. Include paired cases with the same number under different sources/units to catch naive membership-only fidelity checking. Coverage and usefulness must be scored separately so empty views cannot win.
+1. Freeze 40 synthetic fixtures (ten per family), canonical bytes/hashes and source-fact oracles. Families: metric/trend; table/explicit flow; sparse/no-useful-data; malformed/adversarial. Include small/medium/near-limit sizes, null chart gaps, conflicting collectors, stale times, mixed units/subsystems, Unicode, embedded instructions and identical values from unrelated sources. Preflight-invalid fixtures must make zero calls.
+2. Freeze candidate preparation, schema projections and relevance expectations before execution. Recreate service-style cases, including unrelated worker latency, but keep unseen holdouts. Accept multiple legitimate orders; score useful coverage and misleading associations separately from exact schema validity. Human-review every accepted view against source facts.
+3. Test locally: duplicate keys/IDs, stale references, missing answers, refusal/truncation wrappers, response-size caps, transport errors, late results and atomic fallback. Injected errors are simulations, not measured provider reliability. Exercise Android rendering later without changing notification sequencing.
+4. Obtain separate user approval for pinned Jev 1.13, synthetic payload disclosure and a bounded request/stop plan; financial controls belong to the operator's provider account/key, not a Varde budget subsystem. Evaluate Jev only initially. Other-provider comparisons and a generalized contract are deferred. Do not silently switch to TypeSafe preview 1.14.
+5. The approved initial plan is Jev-only: ten randomized repetitions per fixture, at most 400 scheduled cases; preflight bypasses reduce actual calls. Randomize case order and time windows. Measure concurrency 1 first; any burst condition needs separate approval. Record unknown cache state honestly; a new HTTP connection does not prove a cold provider cache.
+6. Start with one attempt per case, disabling SDK retries; evaluate durable transient retries separately. Record exact model ID, prompt and schema hashes, SDK/API versions, reasoning settings, token/output limits, account tier, backend/network region, timestamps and price snapshot without recording secrets or real alert content.
+7. Report end-to-end generation p50/p95 from backend queue acceptance through validated view or finalized fallback, plus provider duration and success-only time-to-valid-view. Report nearest-rank percentiles, counts and censored timeouts; do not treat deadline expirations as successful views. Phone fetch, Android rendering and push delivery are separate measurements.
+8. Report schema/fidelity/usefulness acceptance, omission errors, unsupported associations, fallback reasons, HTTP/refusal/truncation rates, deadline misses, usage including reasoning/cache tokens, cost/alert and cost/accepted useful view. Missing timeout usage is unknown; reconcile billed spend. Zero observed fidelity failures is not a universal guarantee.
 
-### Execution protocol
+At the illustrative assumptions, 400 actual Jev attempts cost about **$0.0336**. This is an estimate, **not a spending cap**: actual questions/input and retries differ. Agree a bounded execution/stop plan and operator-managed provider financial controls before any separately authorized trial.
 
-1. Freeze prompt, canonical schema, provider projection, SDK/API versions, exact model ID, reasoning setting, output cap, deadline, concurrency and price snapshot. Record backend hardware/network region, account tier, run time and cache metadata.
-2. Run **10 randomized repetitions per fixture per model**: 400 scheduled cases/model and 1,200 across the three main candidates. Keep preflight bypasses in product outcomes but exclude them from provider latency percentiles.
-3. Start at concurrency 1; run a separate bounded burst condition, for example concurrency 4. Interleave model order; repeat across time windows where feasible.
-4. Separate initial-schema/first-request observations from repeated fixed-schema traffic. A new connection does not prove a cold provider cache; label unknown cache state honestly.
-5. Measure one-attempt behavior first. Test transient retries separately and log every attempt. Locally injected network errors are simulations, not measured provider reliability.
-6. Obtain approval and a spending ceiling before any future paid execution. At the illustrative usage, **400 actual attempts per main candidate total $0.80**; optional Luna adds **$0.40**. This is not a cap: thinking, longer output and retries can increase cost. Preflight bypasses reduce actual calls.
+Approved later-evaluation targets in #39: zero observed supplied-fact/fallback violations, at least 95% useful selections among eligible cases and successful valid-completion p95 at most 5 seconds at concurrency one, with 10-second attempt cancellation. Always report full outcome/fallback/deadline counts and censored timeouts alongside success-only percentiles. These are targets, not measured results or permission to execute the trial. Small-sample uncertainty, relevance, privacy and cost must be reviewed together; an empty selector or one that times out difficult cases must not win. If the targets are unmet, retain original-text-only operation rather than escalating to another provider.
 
-### Metrics
+## 7. Decisions and next actions
 
-Use monotonic clocks. **Generation end-to-end latency** starts when the backend accepts work into the generation pipeline and ends with a validated view or finalized fallback. Include queueing, networking, model completion, validation and allowed retries; report provider-call duration separately.
+1. Preserve the user-confirmed [Jev-first BYOK design](hosted-model-byok.md): Jev 1.13 only, local backend-owned keys, optional typed input and no Varde financial-budget enforcement. A shared provider contract is deferred. Production generation stays disabled and no paid benchmarking is authorized.
+2. Implement the approved #39 contracts through the #38 slices, preserving #4's component constraints. The wire schemas, configuration/execution rules and evaluation targets are no longer unresolved choices.
+3. Disclose TypeSafe retention uncertainty and verify account access/eligibility/model lifecycle before any separately authorized use. Acceptance of retention remains the operator's decision. Other providers' unresolved policy wording matters only if they are reconsidered later.
+4. Expand the initial contract examples into reproducible lifecycle/fake-transport/Android tests; then seek separate explicit approval for any synthetic live trial and bounded execution plan. Financial controls remain operator-managed.
+5. Only after schema validation and evidence gates are satisfied, seek production configuration approval. Record an approved decision separately if granted. Publishing this recommendation to #6, changing its state, pushing or creating a PR all require separate approval. Keep #11/#16 acceptance and notification tickets unchanged.
 
-For each model/family/size/concurrency/cache/retry condition, record:
+## Primary sources
 
-- Generation p50/p95 in milliseconds, sample counts, outcome counts, deadline misses and fallback rate.
-- Success-only time-to-valid-view p50/p95, clearly labeled. Timeouts are censored observations, not successful completions at the deadline. Use nearest-rank percentiles (`ceil(p × n)`) and disclose small-sample uncertainty.
-- First-attempt schema validity; fidelity validity conditional on schema validity; total accepted-view rate. Separate preflight bypasses, refusals, truncation, HTTP/transport errors and invalid generated views.
-- Fidelity errors: fabricated measurements, changed values/units/timestamps, incorrect source associations, unsupported prose, invented edges and missing-data estimates. Score useful coverage separately.
-- Provider-reported input/output/thinking/reasoning/cache tokens where exposed, cost per attempt, cost per alert including retries and cost per accepted view. Missing usage after timeout is unknown, not zero; reconcile billing where possible.
-- Manual source-oracle review of every accepted view and Android checks for bounds and unchanged original metadata. Zero observed fidelity errors would not establish a universal guarantee.
+All external sources below were directly retrieved **2026-10-19 UTC**. Rates/capabilities/policies are documented claims, not measured results or contractual guarantees for this account. Google pricing was also inspected under its raw model heading because readable extraction omitted headings. Live docs may change; model access and exact wire schemas remain untested.
 
-**Phone-to-backend fetch latency stays separate.** Measure phone request/response timing and server fetch processing later across representative local/remote networks. Do not infer it from provider duration. Notification delivery and Android rendering are also separate spans.
-
-**Notification-before-fetch is explicitly deferred until measured generation and fetch latency are available.** No sequencing decision is made here.
-
-## 7. Compact next steps
-
-1. Approve contract, limits, extractive text, supplied-only flows and fidelity oracle.
-2. Recheck account access/prices; resolve Google personal-use eligibility and Anthropic retention wording.
-3. Prepare synthetic corpus and provider schema projections without production credentials or real alerts.
-4. Approve and run a bounded paid benchmark of the three main candidates; optionally add Luna.
-5. Rank fidelity first, then p95/deadline behavior and cost per accepted view; retain original-text fallback regardless of vendor.
-6. Measure phone fetch separately before revisiting notification sequencing.
-
-## Primary sources and verification
-
-All sources below were directly fetched and relevant passages inspected. Google pricing was additionally checked in raw HTML because readable extraction omitted model headings. A page-local extraction initially could not attribute prices; raw heading/table inspection resolved that limitation. No model APIs were executed.
-
-- [O1] OpenAI: [GPT-5 nano](https://developers.openai.com/api/docs/models/gpt-5-nano)—snapshot, rates, endpoints, Structured Outputs and Luna recommendation.
-- [O2] OpenAI: [GPT-5.6 Luna](https://developers.openai.com/api/docs/models/gpt-5.6-luna)—rates, reasoning controls and Structured Outputs.
-- [O3] OpenAI: [Structured model outputs](https://developers.openai.com/api/docs/guides/structured-outputs)—schema subset, strictness and exceptions.
-- [O4] OpenAI: [Data controls](https://developers.openai.com/api/docs/guides/your-data)—training, abuse logs, application state, caching and retention controls.
-- [O5] OpenAI: [Reasoning models](https://developers.openai.com/api/docs/guides/reasoning)—reasoning-token output billing, usage fields and incomplete outputs.
-- [G1] Google: [Gemini 3.5 Flash-Lite](https://ai.google.dev/gemini-api/docs/models/gemini-3.5-flash-lite)—stable ID, capabilities and page date.
-- [G2] Google: [Gemini 3.1 Flash-Lite](https://ai.google.dev/gemini-api/docs/models/gemini-3.1-flash-lite)—stable ID and structured-output support.
-- [G3] Google: [Gemini API pricing](https://ai.google.dev/gemini-api/docs/pricing#gemini-3.1-flash-lite)—Standard paid rates, units and thinking-token inclusion; also checked 3.5 section.
-- [G4] Google: [Structured outputs](https://ai.google.dev/gemini-api/docs/structured-output)—supported schema subset and semantic-validation warning.
-- [G5] Google: [Gemini API terms](https://ai.google.dev/gemini-api/terms)—professional/business-use restriction, paid/unpaid data use and storage.
-- [G6] Google: [Abuse monitoring](https://ai.google.dev/gemini-api/docs/usage-policies)—55-day retention and authorized review.
-- [A1] Anthropic: [Haiku 5.5 overview](https://platform.claude.com/docs/en/models/haiku-5-5/overview)—release date, identifier, positioning, prices and thresholds.
-- [A2] Anthropic: [Structured outputs](https://platform.claude.com/docs/en/build-with-claude/structured-outputs)—supported models, constraints, compilation/caching, billed guidance and output exceptions.
-- [A3] Anthropic: [Model pricing](https://platform.claude.com/docs/en/about-claude/pricing)—rates and qualifications.
-- [A4] Anthropic Privacy Center: [Training policy](https://privacy.claude.com/en/articles/7996868-is-my-data-used-for-model-training)—commercial data and consent/feedback exceptions.
-- [A5] Anthropic: [API and data retention](https://platform.claude.com/docs/en/manage-claude/api-and-data-retention)—feature retention, ZDR arrangements and Covered Models.
-- [A6] Anthropic Privacy Center: [Organization data retention](https://privacy.claude.com/en/articles/7996866-how-long-do-you-store-personal-data)—30-day standard deletion and exceptions.
-
-**Residual risks:** live documentation can change; personal account eligibility and exact schema support remain untested; Anthropic retention wording needs clarification; no measured latency, token costs, data fidelity, quota or privacy guarantees are established. The benchmark and production settings remain proposals, not implementation results.
+- [O1] OpenAI, [GPT-6 Luna](https://developers.openai.com/api/docs/models/gpt-6-luna): supported features, identifier, effort controls, rates and long-context/regional qualifications.
+- [O2] OpenAI, [Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs): strict schema subset, limits, refusals and incomplete outputs.
+- [O3] OpenAI, [GPT-5 nano](https://developers.openai.com/api/docs/models/gpt-5-nano): snapshot, reasoning, Structured Outputs and rates.
+- [O4] OpenAI, [Decisions](https://developers.openai.com/api/docs/guides/decisions): public beta, supported model/types, endpoint-specific input-only pricing, latency claim and Structured Outputs distinction.
+- [O5] OpenAI, [GPT-5.6 Luna](https://developers.openai.com/api/docs/models/gpt-5.6-luna): previous comparison's rates and effort controls.
+- [O6] OpenAI, [Data controls](https://developers.openai.com/api/docs/guides/your-data): training, abuse logs, Responses storage, prompt caching, ZDR and residency limitations.
+- [T1] TypeSafe, [Models](https://docs.typesafe.ai/models.md): versions/aliases, rates, context, training-use statement and enterprise ZDR link.
+- [T2] TypeSafe, [API reference](https://docs.typesafe.ai/api): typed questions/answers, option/request limits, errors and automatic SDK retries.
+- [T3] TypeSafe, [Legal](https://docs.typesafe.ai/legal): owner policy links and enterprise ZDR availability.
+- [T4] TypeSafe, [Data Processing Addendum](https://typesafe.ai/legal/data-processing) and [Privacy Policy](https://typesafe.ai/legal/privacy-policy): processing/retention terms; no fixed standard prompt/response TTL established by this review.
+- [A1] Anthropic, [Haiku 5.5 overview](https://platform.claude.com/docs/en/models/haiku-5-5/overview): identifier, prices/threshold, default thinking and relative latency positioning.
+- [A2] Anthropic, [Structured outputs](https://platform.claude.com/docs/en/build-with-claude/structured-outputs): syntax/subset, grammar caching, schema billing, refusal/truncation/casing exceptions and retention claims.
+- [A3] Anthropic, [API data retention](https://platform.claude.com/docs/en/manage-claude/api-and-data-retention): default-content statement, ZDR arrangements and Covered Models.
+- [A4] Anthropic Privacy Center, [Organization retention](https://privacy.claude.com/en/articles/7996866-how-long-do-you-store-personal-data): standard 30-day deletion and policy/legal/feedback exceptions.
+- [A5] Anthropic Privacy Center, [Training policy](https://privacy.claude.com/en/articles/7996868-is-my-data-used-for-model-training): commercial data use and permission/feedback exceptions.
+- [G1] Google, [Gemini 3.1 Flash-Lite](https://ai.google.dev/gemini-api/docs/models/gemini-3.1-flash-lite): capability and model identity.
+- [G2] Google, [Structured outputs](https://ai.google.dev/gemini-api/docs/structured-output): JSON Schema subset, constraints and semantic-validation warning.
+- [G3] Google, [Gemini API pricing — 3.1 Flash-Lite](https://ai.google.dev/gemini-api/docs/pricing#gemini-3.1-flash-lite): standard paid rates and thinking-token inclusion.
+- [G4] Google, [Gemini API terms](https://ai.google.dev/gemini-api/terms): eligibility, paid/unpaid data use, billing linkage, regional exceptions and storage.
+- [G5] Google, [Abuse monitoring](https://ai.google.dev/gemini-api/docs/usage-policies): 55-day retention and authorized review.

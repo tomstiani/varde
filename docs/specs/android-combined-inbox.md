@@ -222,7 +222,7 @@ Existing backend prior art covers role separation, credentials, duplicate identi
 
 ## Further Notes
 
-- This milestone deliberately proves manual use before push. Notification timing was subsequently settled in spec #19; production model selection remains unresolved.
+- This milestone deliberately proves manual use before push. Notification timing was subsequently settled in spec #19. The later [#39 rich-alert contracts](rich-alert-contracts.md) approve Jev 1.13 BYOK and typed-data/view grammar; rich-view implementation, live evaluation and production generation enablement remain outside this inbox milestone.
 - Multiple connections are an explicit revision of the initial single-connection proposal. The combined feed exists only on Android; each backend retains independent history and authentication.
 - Cross-backend timestamp ordering cannot establish true global event or acceptance order when clocks differ. Original event time is descriptive, not the merge key. Partial failures make the feed visibly incomplete.
 - HTTPS URL aliases can list the same backend twice. That limitation is accepted for this milestone; future backend identity discovery could address it without changing current local connection identity.

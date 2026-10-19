@@ -8,6 +8,8 @@ A [debug-only local notification path](../docs/how-to/test-local-notifications.m
 
 For the simplest local phone test, follow [two-backend USB acceptance](../docs/how-to/local-acceptance.md). It needs no homelab connection or tailnet changes.
 
+The [approved rich-alert contracts](../docs/specs/rich-alert-contracts.md) define the future typed-data/view grammar and coordinated backend/Android upgrades without backward-version support. This is contract delivery, not implemented rich rendering or live AI integration; [#38](https://github.com/tomstiani/varde/issues/38) tracks the implementation slices.
+
 ## Prerequisites
 
 - Android 8.0 / API 26 or newer. USB setup/browsing has run on a Samsung SM-S938B with Android API 36; this is not physical-device coverage of every supported API level.

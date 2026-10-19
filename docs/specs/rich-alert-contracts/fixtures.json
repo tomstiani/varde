@@ -1,0 +1,120 @@
+{
+  "status": "Approved #39 contract examples; not a live model run or production validator suite",
+  "composition": "Each original is baseOriginal shallow-merged with case.input. Cases are independent. Generation is assumed explicitly enabled with valid synthetic configuration; no request is actually made.",
+  "baseOriginal": {
+    "schemaVersion": 1,
+    "eventId": "synthetic-contract-example",
+    "title": "Synthetic service alert",
+    "summary": "",
+    "priority": "normal",
+    "observedAt": "2026-10-19T12:03:00Z",
+    "data": []
+  },
+  "cases": [
+    {
+      "id": "plain-text-bypass",
+      "input": {"summary": "Synthetic diagnostic text; no typed facts."},
+      "expect": {"input": "accept", "candidates": [], "wouldCall": false, "outcome": "no_useful_data"}
+    },
+    {
+      "id": "minimal-measurement",
+      "input": {"data": [{"type": "measurement", "label": "CPU usage", "value": 83, "unit": "%"}]},
+      "answers": {"d0.metric": "p0"},
+      "expect": {"input": "accept", "candidates": ["d0.metric"], "wouldCall": true, "outcome": "rich", "components": [{"type": "metric", "dataIndex": 0, "reading": "value"}]}
+    },
+    {
+      "id": "history-only-unsorted",
+      "input": {"data": [{"type": "measurement", "label": "CPU usage", "unit": "%", "samples": [{"measuredAt": "2026-10-19T12:02:00Z", "value": 83}, {"measuredAt": "2026-10-19T12:00:00Z", "value": 20}]}]},
+      "answers": {"d0.metric": "p1", "d0.chart": "p0"},
+      "expect": {"input": "accept", "candidates": ["d0.metric", "d0.chart"], "wouldCall": true, "outcome": "rich", "components": [{"type": "lineChart", "dataIndex": 0}, {"type": "metric", "dataIndex": 0, "reading": "latestSample"}], "presentationSampleOrder": [1, 0], "originalSampleOrder": [0, 1]}
+    },
+    {
+      "id": "gap-preserved",
+      "input": {"data": [{"type": "measurement", "label": "CPU usage", "samples": [{"measuredAt": "2026-10-19T12:00:00Z", "value": 20}, {"measuredAt": "2026-10-19T12:01:00Z", "value": null}, {"measuredAt": "2026-10-19T12:02:00Z", "value": 83}]}]},
+      "answers": {"d0.metric": "omit", "d0.chart": "p0"},
+      "expect": {"input": "accept", "candidates": ["d0.metric", "d0.chart"], "wouldCall": true, "outcome": "rich", "components": [{"type": "lineChart", "dataIndex": 0}], "gapSampleIndexes": [1]}
+    },
+    {
+      "id": "newest-sample-null",
+      "input": {"data": [{"type": "measurement", "label": "CPU usage", "samples": [{"measuredAt": "2026-10-19T12:00:00Z", "value": 20}, {"measuredAt": "2026-10-19T12:01:00Z", "value": 40}, {"measuredAt": "2026-10-19T12:02:00Z", "value": null}]}]},
+      "answers": {"d0.chart": "p0"},
+      "expect": {"input": "accept", "candidates": ["d0.chart"], "wouldCall": true, "outcome": "rich", "components": [{"type": "lineChart", "dataIndex": 0}]}
+    },
+    {
+      "id": "explicit-null-standalone-does-not-become-history-metric",
+      "decision": "Explicit null/absence distinction approved in #39",
+      "input": {"data": [{"type": "measurement", "label": "CPU usage", "value": null, "samples": [{"measuredAt": "2026-10-19T12:00:00Z", "value": 20}, {"measuredAt": "2026-10-19T12:01:00Z", "value": 40}]}]},
+      "answers": {"d0.chart": "p0"},
+      "expect": {"input": "accept", "candidates": ["d0.chart"], "wouldCall": true, "outcome": "rich", "components": [{"type": "lineChart", "dataIndex": 0}]}
+    },
+    {
+      "id": "untimed-value-independent",
+      "input": {"data": [{"type": "measurement", "label": "CPU usage", "value": 0, "samples": [{"measuredAt": "2026-10-19T12:00:00Z", "value": 20}, {"measuredAt": "2026-10-19T12:01:00Z", "value": 40}]}]},
+      "answers": {"d0.metric": "p0", "d0.chart": "omit"},
+      "expect": {"input": "accept", "candidates": ["d0.metric", "d0.chart"], "wouldCall": true, "outcome": "rich", "components": [{"type": "metric", "dataIndex": 0, "reading": "value"}], "standaloneMeasurementTime": null}
+    },
+    {
+      "id": "same-instant-conflict",
+      "input": {"data": [{"type": "measurement", "label": "CPU usage", "value": 83, "measuredAt": "2026-10-19T12:02:00Z", "samples": [{"measuredAt": "2026-10-19T12:02:00Z", "value": 45}]}]},
+      "expect": {"input": "reject", "field": "data[0].value", "wouldCall": false}
+    },
+    {
+      "id": "equivalent-offset-duplicate",
+      "input": {"data": [{"type": "measurement", "label": "CPU usage", "samples": [{"measuredAt": "2026-10-19T12:00:00Z", "value": 20}, {"measuredAt": "2026-10-19T14:00:00+02:00", "value": 40}]}]},
+      "expect": {"input": "reject", "field": "data[0].samples[1].measuredAt", "wouldCall": false}
+    },
+    {
+      "id": "exact-decimal-equality",
+      "input": {"data": [{"type": "measurement", "label": "CPU usage", "value": 83.00, "measuredAt": "2026-10-19T12:02:00Z", "samples": [{"measuredAt": "2026-10-19T12:02:00Z", "value": 8.3e1}]}]},
+      "answers": {"d0.metric": "p0"},
+      "expect": {"input": "accept", "candidates": ["d0.metric"], "wouldCall": true, "outcome": "rich", "components": [{"type": "metric", "dataIndex": 0, "reading": "value"}]}
+    },
+    {
+      "id": "source-default-cleared",
+      "input": {"dataDefaults": {"source": "synthetic-source", "resource": "synthetic-host", "collector": "synthetic-collector"}, "data": [{"type": "measurement", "label": "CPU usage", "value": 83, "source": null}]},
+      "answers": {"d0.metric": "p0"},
+      "expect": {"input": "accept", "candidates": ["d0.metric"], "wouldCall": true, "outcome": "rich", "components": [{"type": "metric", "dataIndex": 0, "reading": "value"}], "resolvedMetadata": {"source": null, "resource": "synthetic-host", "collector": "synthetic-collector"}}
+    },
+    {
+      "id": "records-scalars",
+      "input": {"data": [{"type": "records", "label": "Synthetic job results", "columns": [{"key": "job", "label": "Job"}, {"key": "ok", "label": "Healthy"}, {"key": "duration", "label": "Duration", "unit": "ms"}], "rows": [{"job": "nightly", "ok": false, "duration": 1200}, {"job": "hourly", "ok": true, "duration": null}]}]},
+      "answers": {"d0.table": "p0"},
+      "expect": {"input": "accept", "candidates": ["d0.table"], "wouldCall": true, "outcome": "rich", "components": [{"type": "table", "dataIndex": 0}]}
+    },
+    {
+      "id": "record-missing-column",
+      "input": {"data": [{"type": "records", "label": "Synthetic job results", "columns": [{"key": "job", "label": "Job"}, {"key": "ok", "label": "Healthy"}], "rows": [{"job": "nightly"}]}]},
+      "expect": {"input": "reject", "field": "data[0].rows[0]", "wouldCall": false}
+    },
+    {
+      "id": "sequence-order",
+      "input": {"data": [{"type": "sequence", "label": "Synthetic backup stages", "steps": [{"label": "Snapshot", "status": "complete"}, {"label": "Upload", "status": "failed"}, {"label": "Verify", "status": "not run"}]}]},
+      "answers": {"d0.flow": "p0"},
+      "expect": {"input": "accept", "candidates": ["d0.flow"], "wouldCall": true, "outcome": "rich", "components": [{"type": "flow", "dataIndex": 0}], "stepOrder": [0, 1, 2]}
+    },
+    {
+      "id": "empty-records-bypass",
+      "decision": "Empty-container acceptance approved in #39",
+      "input": {"data": [{"type": "records", "label": "Synthetic empty results", "columns": [{"key": "job", "label": "Job"}], "rows": []}]},
+      "expect": {"input": "accept", "candidates": [], "wouldCall": false, "outcome": "no_useful_data"}
+    },
+    {
+      "id": "whole-summary-and-stable-position-tie",
+      "input": {"summary": "Synthetic diagnostic text; preserve the complete context.", "data": [{"type": "measurement", "label": "CPU usage", "value": 83}]},
+      "answers": {"d0.metric": "p1", "summary": "p1"},
+      "expect": {"input": "accept", "candidates": ["d0.metric", "summary"], "wouldCall": true, "outcome": "rich", "components": [{"type": "metric", "dataIndex": 0, "reading": "value"}, {"type": "text", "field": "summary"}]}
+    },
+    {
+      "id": "all-omit-fallback",
+      "input": {"data": [{"type": "measurement", "label": "Unrelated synthetic measurement", "value": 83}]},
+      "answers": {"d0.metric": "omit"},
+      "expect": {"input": "accept", "candidates": ["d0.metric"], "wouldCall": true, "outcome": "empty_selection"}
+    },
+    {
+      "id": "invalid-option-whole-fallback",
+      "input": {"data": [{"type": "measurement", "label": "CPU usage", "value": 83}]},
+      "answers": {"d0.metric": "p99"},
+      "expect": {"input": "accept", "candidates": ["d0.metric"], "wouldCall": true, "outcome": "invalid_output"}
+    }
+  ]
+}
