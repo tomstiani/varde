@@ -140,3 +140,5 @@ jobs:
         run: docker compose -p varde-ci config --quiet
       - name: Build and verify disposable backend persistence
         run: python3 scripts/test-compose.py
+      - name: Verify disposable non-root generation key permissions
+        run: python3 scripts/test-generation-compose.py
