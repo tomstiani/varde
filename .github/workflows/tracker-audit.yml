@@ -1,0 +1,43 @@
+name: Tracker audit
+
+on:
+  schedule:
+    - cron: '23 7 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    name: Read-only delivery audit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Report unclosed delivery and blocked work
+        env:
+          GH_TOKEN: ${{ github.token }}
+          AUDIT_REPOSITORY: ${{ github.repository }}
+        run: >-
+          python3 scripts/tracker-status.py audit
+          --repo "$AUDIT_REPOSITORY"
+          --output tracker-audit/report.json
+          --summary "$GITHUB_STEP_SUMMARY"
+          --fail-on-findings
+      - name: Save audit report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: tracker-audit
+          path: tracker-audit/report.json
+          if-no-files-found: ignore
+          retention-days: 7
