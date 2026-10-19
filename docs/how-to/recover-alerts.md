@@ -17,6 +17,8 @@ Counts exclude already individually announced alerts and earlier catch-up covera
 
 ## Backend wire reference
 
+For the separate backend registration API, see [Manage a backend installation's push registration](register-push.md). Android recovery does not use registration yet.
+
 All operations require the current installation bearer credential. Sender credentials receive `403`; missing, invalid and revoked credentials receive `401`. Every response uses `Cache-Control: no-store`. The existing trusted-HTTPS, redirect-refusal and base-path rules still apply.
 
 ### Establish a silent checkpoint

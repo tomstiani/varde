@@ -30,6 +30,10 @@ func (e *Failure) Message() string {
 		return "This credential does not permit this operation."
 	case "not_found":
 		return "The alert was not found."
+	case "idempotency_conflict":
+		return "This idempotency key already has a different request."
+	case "registration_changed":
+		return "Registration changed; reload current state before reconciling."
 	case "identity_conflict":
 		return "This sender event ID already has different content."
 	case "body_too_large":

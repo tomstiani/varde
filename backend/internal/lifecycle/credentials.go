@@ -46,6 +46,11 @@ func (s *Lifecycle) RevokeCredential(ctx context.Context, credentialID string) e
 		if err == nil && count == 0 {
 			return failure("not_found")
 		}
+		if err != nil {
+			return err
+		}
+		_, err = conn.ExecContext(ctx, `UPDATE push_work SET finished=1 WHERE finished=0
+			AND installation_id IN (SELECT installation_id FROM push_registrations WHERE credential_id=?)`, credentialID)
 		return err
 	}))
 }
