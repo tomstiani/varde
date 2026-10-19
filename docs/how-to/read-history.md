@@ -43,7 +43,7 @@ An empty inbox returns `items: []` and `nextCursor: null`. Summary pages exclude
 
 The watermark fixes membership while presentation revisions are current at each read. A detail request can show a newer fallback revision than its row. Pagination does not hold a transaction open across requests or implement change sync.
 
-Cursor tokens are integrity-protected and bound to a store, order and limit. They survive ordinary backend restarts, but every continuation still requires a current credential. Revocation blocks continuation. Tokens do not work against a separately initialized database. There is no guarantee across restoring an older backup; supported restore/cursor invalidation remains unimplemented.
+Cursor tokens are integrity-protected and bound to a store, order and limit. They survive ordinary backend restarts, but every continuation still requires a current credential. Revocation blocks continuation. Tokens do not work against a separately initialized database. There is no guarantee across restoring an older backup; supported backup/restore and general rollback detection remain unimplemented. The separate [change-recovery contract](recover-alerts.md) detects only some positively invalidated positions, not arbitrary restored copies.
 
 ## Errors
 

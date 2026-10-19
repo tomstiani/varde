@@ -34,7 +34,7 @@ New emulator UI/output tests exercise source controls, pending/active/muted stat
 
 The ordinary token source is deliberately unconfigured. Enabled connections show activation pending until an Adapter supplies a token. Synthetic injected tokens in tests do not configure Google, send FCM, prove receipt, or establish human-visible delivery. No production callback URL or injection endpoint was added.
 
-This work does not observe physical-device notification behavior, real provider delivery, background scheduling, force-stop recovery, deployed HTTPS/n8n, or hosted CI execution for this branch. #23 and #24 remain downstream work; the independent #11/#16 gates are not waived. No Google provisioning, secret upload, homelab deployment, paid call, GitHub publication, issue closure or merge occurred. Independent code review and GitHub acceptance reconciliation are not claimed by these test results.
+At initial local verification, this work had not observed physical-device notification behavior, real provider delivery, background scheduling, force-stop recovery, deployed HTTPS/n8n or hosted CI execution for the branch. The subsequent hosted-CI and merge receipt below does not establish those physical-device/provider/deployment gates. #23 and #24 remain downstream work; the independent #11/#16 gates are not waived. No Google provisioning, secret upload, homelab deployment, paid call, GitHub publication, issue closure or merge occurred. Independent code review and GitHub acceptance reconciliation are not claimed by these test results.
 
 ## Token-repair follow-up
 
@@ -56,4 +56,17 @@ Follow-up results, separate from the initial counts above:
 | Fresh-install denial-dialog fixture alone | 1 passed, no skips |
 | Backend tests, race tests, vet and fake-provider demo | Passed |
 
-An independent, read-only Spec reviewer rechecked the fix and its immediate blast radius and reported no findings, confirming that the prior P1 is resolved by source inspection. The reviewer did not execute tests; the parent ran the commands above. This is scoped fix-review evidence, not a new verdict on every #22 acceptance criterion or on deferred live delivery. The fix was uncommitted at verification time; no publication, issue mutation or live push occurred.
+An independent, read-only Spec reviewer rechecked the fix and its immediate blast radius and reported no findings, confirming that the prior P1 is resolved by source inspection. The reviewer did not execute tests; the parent ran the commands above. This is scoped fix-review evidence, not a new verdict on every #22 acceptance criterion or on deferred live delivery. The fix was uncommitted at verification time; no publication, issue mutation or live push had occurred at that point.
+
+## Hosted CI and merge receipt
+
+[PR #31](https://github.com/tomstiani/varde/pull/31) was squash-merged into `main` as `9363a6c988712bc8795cca3871c12f40000f0c3a`. Its approved head was `472599effd255a7213f161690bedfaf4d91c505c`. GitHub automatically closed #22 through the approved PR closing reference; parent #19 and gates #11/#16 remained open.
+
+All four required checks in [CI run 39262864830](https://github.com/tomstiani/varde/actions/runs/39262864830) completed successfully on that PR head before merge:
+
+- [Backend and workflow checks](https://github.com/tomstiani/varde/actions/runs/39262864830/job/118094782667)
+- [Android JVM, transport and build](https://github.com/tomstiani/varde/actions/runs/39262864830/job/118094782841)
+- [Android emulator](https://github.com/tomstiani/varde/actions/runs/39262864830/job/118094782244)
+- [Linux Compose smoke test](https://github.com/tomstiani/varde/actions/runs/39262864830/job/118094782653)
+
+This receipt supplements, rather than rewrites, the earlier local observations and counts. Hosted success does not turn skipped live tests into evidence of FCM receipt, physical-phone notification behavior, periodic recovery or a deployed HTTPS/n8n path. Native dependency links are retained as history; current readiness and task state belong to GitHub.

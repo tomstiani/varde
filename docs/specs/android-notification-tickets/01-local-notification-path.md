@@ -2,7 +2,7 @@
 
 ## Delivery evidence
 
-**Implemented:** delivered in [PR #26](https://github.com/tomstiani/varde/pull/26), with smaller-screen UI test hardening in PR #27. [Verification](https://github.com/tomstiani/varde/blob/main/docs/verification/android-local-notifications.md) covers the local synthetic path, not real FCM or physical-phone delivery. Later foreground recovery is #21; remaining registration/provider/background work is #22–#25.
+**Implemented:** delivered in [PR #26](https://github.com/tomstiani/varde/pull/26), with smaller-screen UI test hardening in PR #27. [Verification](https://github.com/tomstiani/varde/blob/main/docs/verification/android-local-notifications.md) covers the local synthetic path, not real FCM or physical-phone delivery. Related scope is foreground recovery (#21), registration/controls (#22), real provider Adapters (#23), background recovery (#24) and integrated acceptance (#25). Follow the linked GitHub issues for current state rather than treating this historical receipt as a progress dashboard.
 
 ## Parent
 

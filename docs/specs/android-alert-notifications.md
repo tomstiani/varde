@@ -15,7 +15,7 @@ GitHub owns current completion, checkboxes and dependency readiness. This index 
 - [#24](https://github.com/tomstiani/varde/issues/24): background recovery.
 - [#25](https://github.com/tomstiani/varde/issues/25): integrated notification acceptance.
 
-Historical delivery evidence: [PR #26](https://github.com/tomstiani/varde/pull/26) / [local notification verification](../verification/android-local-notifications.md), and [PR #28](https://github.com/tomstiani/varde/pull/28) / [foreground recovery verification](../verification/android-missed-alert-recovery.md). The user stories and implementation contract below describe the complete target, not a live feature/status inventory. Live checks still require operator approval.
+Historical delivery evidence: [PR #26](https://github.com/tomstiani/varde/pull/26) / [local notification verification](../verification/android-local-notifications.md), [PR #28](https://github.com/tomstiani/varde/pull/28) / [foreground recovery verification](../verification/android-missed-alert-recovery.md), and [PR #31](https://github.com/tomstiani/varde/pull/31) / [registration and controls verification](../verification/android-notification-controls.md). The user stories and implementation contract below describe the complete target, not a live feature/status inventory. Live checks still require operator approval.
 
 ## Problem Statement
 

@@ -1,5 +1,9 @@
 **Tracker:** [#22](https://github.com/tomstiani/varde/issues/22) owns current state and completion checkboxes. This file retains the requirements and delivery evidence.
 
+## Delivery evidence
+
+[PR #31](https://github.com/tomstiani/varde/pull/31), merged as `9363a6c`, delivered registration, durable fake-provider scheduling and Android controls. The [verification record](../../verification/android-notification-controls.md) distinguishes local, emulator and hosted-CI evidence from unverified real-provider/physical-phone delivery. See the [registration wire reference](../../how-to/register-push.md), [controls guide](../../how-to/control-notifications.md) and [fake-provider demonstration](../../how-to/test-push-delivery.md). GitHub remains the source of current completion and dependencies; this receipt does not establish the separate #11/#16 gates.
+
 ## Parent
 
 Part of #19: Android alert notifications and missed-delivery recovery. The approved parent specification is authoritative, including conditional registration, idempotency, retry accounting and silent-baseline semantics.
