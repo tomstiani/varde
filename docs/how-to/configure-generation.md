@@ -14,6 +14,8 @@ No environment variable, readable key, sender credential or Android installation
 
 Use a locally built `varde` executable. The paths below are examples, not existing deployment paths. Use invented key material for local checks; never pass a real key in command arguments.
 
+Before activating against important data, preserve a consistent private backup. Commands that open SQLite upgrade it to schema version 5; older binaries reject that version. See [storage handling](run-backend.md#storage-handling).
+
 1. Create a private temporary fixture directory:
 
    ```sh
@@ -93,6 +95,8 @@ docker compose --env-file /dev/null -f compose.yaml \
 These environment variables select files only; they never contain key bytes. The override bind-mounts both files read-only at runtime and preserves the existing service hardening and data volume. Do not add keys to build context, images, Compose values or tracked files. Compose bind mounts preserve host ownership/mode; a file mount is not encrypted secret storage. Host/root administrators, backups and the Docker daemon remain trusted.
 
 For an operator-approved activation, recreate the service with the same two Compose files and your selected files. This ticket does not authorize deployment. The disposable Linux packaging test is `python3 scripts/test-generation-compose.py`; it builds locally, uses invented files, tests UID/GID readability and removes only its uniquely named test resources. It does not use your selected files or deployment project.
+
+The existing **Linux Compose smoke test** CI job runs this fixture after its persistence smoke test. It requires Linux, Python 3, Docker Engine/Compose and a local daemon that can bind-mount the temporary fixture files. A root helper container must be able to change those files' ownership and modes; the key checks run as service UID/GID `10001:10001`. See [local packaging verification](run-compose.md#automated-versus-operator-verification). Its actual Linux/Docker runtime result remains unverified until ordinary approved PR CI executes it. Static Compose validation and workflow lint are not runtime evidence.
 
 ## Rotation, revision conflicts and unavailable generation
 

@@ -17,7 +17,7 @@ Four independent jobs run on disposable Ubuntu 24.04 runners:
 | Backend and workflow checks | Actionlint; local tracker-contract/proposed-ruleset checks; Go tests, race detector, vet and restart demo; Python synthetic-fixture/tooling tests |
 | Android JVM, transport and build | Debug/release JVM tests, explicit real-Go history/recovery/registration/control tests, both lint tasks and both APK builds |
 | Android emulator | Ordinary instrumented UI/security/notification tests on an isolated API 36 Google APIs x86_64 emulator |
-| Linux Compose smoke test | Compose validation, actual image build, synthetic credential issuance/submission, container recreation, retained reads and duplicate recovery |
+| Linux Compose smoke test | Compose validation, actual image build, synthetic credential issuance/submission, container recreation, retained reads, duplicate recovery and non-root runtime generation-key permission checks |
 
 The real-Go Gradle task is explicit: ordinary JVM tasks deliberately exclude those fixtures. The emulator's operator-only live acceptance test stays skipped. The denial-dialog fixture also skips if an earlier test already granted permission; run it separately on a fresh managed install to observe the actual dialog, as described in the [controls guide](control-notifications.md). A full-suite green result does not imply that a skipped dialog or live test ran. No test contacts the homelab, sends a real push, makes a paid model call, or needs Firebase/server credentials.
 
@@ -36,7 +36,9 @@ The workflow provisions JDK 17, the Go 1.26 series, SDK Platform 36 and Build To
 
 Managed Android instrumentation uninstalls its app/test APKs afterward. CI uses only a disposable emulator. For local reproduction, use a dedicated emulator, not a physical-phone installation with settings you want to retain.
 
-Linux container checks exercise the real Docker daemon and host networking. A macOS cross-build or Compose syntax check alone is not equivalent. Emulator coverage is one OS/image configuration, not every supported Android version or physical-device behaviour.
+The existing Linux Compose job runs `python3 scripts/test-compose.py`, followed by `python3 scripts/test-generation-compose.py`. The second script uses invented key/configuration files and the existing non-root service image; it checks Unix ownership/readability and rejects insecure permissions without provider calls. No separate job or required-check name is added. See [fixture prerequisites and local invocation](run-compose.md#automated-versus-operator-verification).
+
+Linux container checks exercise the real Docker daemon and host networking. A macOS cross-build or Compose syntax check alone is not equivalent. The generation-key runtime fixture remains unverified until an ordinary approved PR CI run executes it; merely adding the workflow step is not passing evidence. Emulator coverage is one OS/image configuration, not every supported Android version or physical-device behaviour.
 
 ## Permissions and enforcement
 
