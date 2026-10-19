@@ -2,6 +2,8 @@
 
 Small synthetic experiments support using bounded decision-model choices to select prepared rich-view candidates. The strongest prompt met the proposed selection/fallback expectations on ten service-style alerts. This is enough to inform architecture, not evidence of production reliability.
 
+For the 2026-10-19 provider comparison, see the [reconciled hosted-model research](hosted-model-strategy-d01c3433-5b78-40d5-afcd-467f0d0b97c7.md). The subsequent [#39 contracts](../specs/rich-alert-contracts.md) approve Jev 1.13 only, backend-owned BYOK and one batched selection step, but not runtime implementation, live benchmarking or production enablement. The observations below remain historical.
+
 This document preserves findings from local throwaway experiments. Runnable benchmarks, synthetic fixtures, raw response reports, and the HTML prototype are intentionally not committed. Consequently, these findings are historical observations, not independently reproducible results from this checkout.
 
 ## Design tested
@@ -92,7 +94,7 @@ The local prompt identifier was `candidates-v3-relevance`. It remained opt-in; t
 - Measure selection usefulness, routing behavior, latency, and spending separately.
 - Production retries require durable per-step accounting. The local experiments had no production scheduler and do not establish crash-recovery correctness.
 
-The later [backend architecture proposal](../architecture/backend.md) supersedes the experiments' no-retry execution policy for production: transient paid steps may receive up to three repeats under durable per-step and daily budgets.
+The approved [#39 execution contract](../specs/rich-alert-contracts.md) supersedes the experiments' no-retry policy for implementation: one selection step permits an initial attempt plus at most three durable transient repeats, without hidden SDK retries or invalid-output repair. There is no daily model quota or Varde dollar-budget enforcement; financial controls belong to the operator. Historical routing/reasoning interfaces above are not required by the Jev-only first release.
 
 ## Limits
 
