@@ -22,7 +22,7 @@ docs/      Shared architecture, research, and operational documentation
 
 Run Go commands from `backend/` and Gradle commands from `android/` using its checked-in wrapper. There is no root Go module or workspace, and no shared runtime library.
 
-See [coding standards](CODING_STANDARDS.md) for the human-readability and package-organization conventions. [Pull-request verification](docs/how-to/check-ci.md) describes the automated checks and failure reports.
+See [coding standards](CODING_STANDARDS.md) for the human-readability and package-organization conventions. [Pull-request verification](docs/how-to/check-ci.md) describes automated checks and failure reports; [tracker consistency](docs/how-to/keep-tracker-current.md) explains completion, read-only audits and required-check enforcement.
 
 ## Why
 
@@ -56,7 +56,7 @@ Alerts should include an explicit priority or severity. Initially, the model use
 ## Current status and remaining work
 
 - **Implemented:** Go/`net/http`/SQLite backend, Kotlin/Compose named-connection inbox, older-history browsing, explicit partial-outage recovery, local alert notifications, foreground change recovery and per-connection catch-up. Linux Compose setup and four-job PR CI are available.
-- **Agreed, not yet fully implemented:** FCM first behind replaceable provider Adapters; minimal signals, immediate generic notifications and silent fetched-detail enrichment. Registration/controls, actual FCM delivery, background recovery and integrated notification acceptance remain [#22–#25](https://github.com/tomstiani/varde/issues/19). The next implementation slice is #22.
+- **Agreed, not yet fully implemented:** FCM first behind replaceable provider Adapters; minimal signals, immediate generic notifications and silent fetched-detail enrichment. Registration/controls, actual FCM delivery, background recovery and integrated notification acceptance remain [#22–#25](https://github.com/tomstiani/varde/issues/19). Use the linked tracker for current task state and dependency readiness.
 - **Still unresolved or deferred:** production model selection, final typed-data/rich-view wire schemas, supported backup/restore and full production operations. Real two-backend transport tests and physical-phone USB inbox setup/browsing are verified; original remote HTTPS/n8n and full live-phone lifecycle acceptance remain deferred in #16.
 
 See the [architecture](docs/architecture/backend.md), [inbox specification](docs/specs/android-combined-inbox.md), and [notification/recovery specification](docs/specs/android-alert-notifications.md) for contracts and milestone boundaries.

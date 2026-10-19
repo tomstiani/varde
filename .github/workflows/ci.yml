@@ -28,6 +28,10 @@ jobs:
           cache-dependency-path: backend/go.sum
       - name: Validate GitHub Actions workflows
         run: go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.12 -color
+      - name: Keep GitHub as the progress source
+        run: |
+          python3 scripts/tracker-status.py check
+          python3 -m json.tool .github/main-ci-ruleset.json > /dev/null
       - name: Backend tests, race detector, vet and restart demo
         working-directory: backend
         run: |

@@ -2,6 +2,20 @@
 
 Issues and specs for this repo live as GitHub issues. Use the `gh` CLI for all operations.
 
+## Delivery and status
+
+GitHub issue state, task checkboxes and native blocking links are the single source of current progress. Tracked local ticket files retain acceptance requirements as plain bullets and link to their live issue. Publication receipts record IDs and original relationships, not live status. Historical verification records keep their original observations/counts.
+
+Before publishing a PR, include explicit issue intent in the approved body:
+
+- `Closes #22` for a fully delivered implementation ticket. Show the closing reference during approval; merge then performs the intended closure.
+- `Part of #19` for parent specs or incomplete work. Unverified operator acceptance remains explicit and is not closed by a substitute automated test.
+- State when documentation/CI/maintenance has no associated implementation ticket.
+
+Use the delivery checklist in `.github/pull_request_template.md`, including when supplying a custom body file. Document changed behaviour/limitations and distinguish implemented, approved-but-unimplemented and unverified work. After merge, verify the intended issue state and native dependency readiness; retain closed dependency edges as history.
+
+Prepare GitHub publication bodies with checkboxes in ignored scratch files, not tracked contract copies. `python3 scripts/tracker-status.py check` rejects duplicate local progress markers in `docs/specs/*-tickets/*.md`. The separate read-only tracker audit reports missed delivery closures and their blocking effect; it does not authorize issue edits or infer that a parent/acceptance gate is complete. See [tracker checks](../how-to/keep-tracker-current.md) for coverage and operations.
+
 ## Conventions
 
 - **Create an issue**: `gh issue create --title "..." --body "..."`. Use a heredoc for multi-line bodies.

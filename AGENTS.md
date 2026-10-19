@@ -6,7 +6,7 @@ Before writing or restructuring code, read [CODING_STANDARDS.md](CODING_STANDARD
 
 ### Issue tracker
 
-Issues and specs live in GitHub Issues, managed with the `gh` CLI. See `docs/agents/issue-tracker.md`.
+Issues and specs live in GitHub Issues. Before drafting PRs, publishing tickets or reconciling completion, read `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 

@@ -14,7 +14,7 @@ Four independent jobs run on disposable Ubuntu 24.04 runners:
 
 | Check | Coverage |
 | --- | --- |
-| Backend and workflow checks | Actionlint; Go tests, race detector, vet and restart demo; Python synthetic-fixture helper tests |
+| Backend and workflow checks | Actionlint; local tracker-contract/proposed-ruleset checks; Go tests, race detector, vet and restart demo; Python synthetic-fixture/tooling tests |
 | Android JVM, transport and build | Debug/release JVM tests, explicit real-Go transport/inbox tests, both lint tasks and both APK builds |
 | Android emulator | Ordinary instrumented UI/security/notification tests on an isolated API 36 Google APIs x86_64 emulator |
 | Linux Compose smoke test | Compose validation, actual image build, synthetic credential issuance/submission, container recreation, retained reads and duplicate recovery |
@@ -42,6 +42,6 @@ Linux container checks exercise the real Docker daemon and host networking. A ma
 
 The workflow uses `pull_request`, not `pull_request_target`, grants the repository token only read access to contents, and disables persisted checkout credentials. Gradle caches are read-only on pull-request runs. There are no deployment steps, private secret inputs, PR comments or privileged follow-up jobs. GitHub may require maintainer approval before running a first-time external contributor's workflow.
 
-Creating the workflow does not make checks mandatory for merging. After the first successful hosted run, a repository administrator can require the four check names above through a branch ruleset. Changing those rules is a separate operator decision; do not claim merge protection is enabled just because checks run.
+Creating the workflow does not make checks mandatory for merging. The proposed `.github/main-ci-ruleset.json` requires the four check names above, but an administrator must separately approve/apply it and verify enforcement. Preserve those names when editing CI. See [tracker consistency and rule operations](keep-tracker-current.md) for the proposal, approval boundary and the separate weekly read-only tracker audit.
 
 A local workflow-lint pass is not evidence that a hosted run passed. Inspect the actual pull-request run before merging the CI change, especially its first Linux Compose and hosted-emulator executions.

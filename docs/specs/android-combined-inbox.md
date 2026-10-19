@@ -1,6 +1,6 @@
 # First Android slice: named connections and a combined plain-text inbox
 
-**Status:** approved and published as [issue #11](https://github.com/tomstiani/varde/issues/11). Core implementation tickets #12–#15 are delivered in [PR #17](https://github.com/tomstiani/varde/pull/17). The parent remains open for #16's deferred remote HTTPS/n8n and complete live-phone lifecycle acceptance. GitHub is the canonical tracker.
+**Status:** approved and published as [issue #11](https://github.com/tomstiani/varde/issues/11). Core implementation tickets #12–#15 are delivered in [PR #17](https://github.com/tomstiani/varde/pull/17). The original remote HTTPS/n8n and complete live-phone lifecycle acceptance are tracked in [#16](https://github.com/tomstiani/varde/issues/16). GitHub owns live issue state and acceptance checkboxes.
 
 **Later increments:** [PR #26](https://github.com/tomstiani/varde/pull/26) adds local notifications and [PR #28](https://github.com/tomstiani/varde/pull/28) adds foreground change recovery under [spec #19](android-alert-notifications.md). The original problem statement, scope and acceptance contract below are retained as this milestone's planning record; they are not a current feature inventory.
 
@@ -227,4 +227,4 @@ Existing backend prior art covers role separation, credentials, duplicate identi
 - Cross-backend timestamp ordering cannot establish true global event or acceptance order when clocks differ. Original event time is descriptive, not the merge key. Partial failures make the feed visibly incomplete.
 - HTTPS URL aliases can list the same backend twice. That limitation is accepted for this milestone; future backend identity discovery could address it without changing current local connection identity.
 - The spec is intentionally larger than one implementation session. After approval, split it into end-to-end tracer-bullet tickets with blocking edges rather than separate disconnected backend and Android projects.
-- Published with approval as issue #11; tickets #12 through #16 form its ordered implementation chain. Core implementation is delivered, while the remaining gate is operator acceptance in #16. This local specification is a retained planning reference. Update tracker issues only with explicit approval.
+- Published with approval as issue #11; tickets #12 through #16 record its original implementation chain. Track current completion and native blocking links in GitHub. This local specification retains the approved contract, not a second progress tracker. Update tracker issues only with explicit approval.

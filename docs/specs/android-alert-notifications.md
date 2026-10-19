@@ -2,20 +2,20 @@
 
 **Status:** approved and published as [issue #19](https://github.com/tomstiani/varde/issues/19). Implementation tickets are #20 through #25, linked as sub-issues with native blocking dependencies. GitHub is the canonical tracker. Live provider configuration is not authorized.
 
-**Context:** extends the implemented combined plain-text inbox and durable Go backend. Advances map #1; the approved specification settles the notification-timing question in #8. The existing remote HTTPS/n8n acceptance gate in #16 remains separate and open; this work does not require a homelab deployment.
+**Context:** extends the implemented combined plain-text inbox and durable Go backend. Advances map #1; the approved specification settles the notification-timing question in #8. The original remote HTTPS/n8n acceptance gate in #16 remains separate; its current acceptance state belongs in GitHub. This work does not require a homelab deployment.
 
-## Implementation status
+## Ticket index
 
-| Ticket | Delivered or remaining |
-| --- | --- |
-| #20 — local notification path | Merged in [PR #26](https://github.com/tomstiani/varde/pull/26); [verification](../verification/android-local-notifications.md) |
-| #21 — foreground missed-alert recovery | Merged in [PR #28](https://github.com/tomstiani/varde/pull/28); [verification](../verification/android-missed-alert-recovery.md) |
-| #22 — registration and notification controls | Next implementation slice; not implemented |
-| #23 — real FCM Adapters | Pending #22 |
-| #24 — background recovery | Pending #22; independent of #23 afterward |
-| #25 — integrated notification acceptance | Pending #23 and #24; live checks still require operator approval |
+GitHub owns current completion, checkboxes and dependency readiness. This index preserves scope, not another progress dashboard:
 
-The user stories and implementation contract below include the complete target, not only currently delivered behaviour.
+- [#20](https://github.com/tomstiani/varde/issues/20): local notification path.
+- [#21](https://github.com/tomstiani/varde/issues/21): foreground missed-alert recovery.
+- [#22](https://github.com/tomstiani/varde/issues/22): registration and notification controls.
+- [#23](https://github.com/tomstiani/varde/issues/23): real FCM Adapters.
+- [#24](https://github.com/tomstiani/varde/issues/24): background recovery.
+- [#25](https://github.com/tomstiani/varde/issues/25): integrated notification acceptance.
+
+Historical delivery evidence: [PR #26](https://github.com/tomstiani/varde/pull/26) / [local notification verification](../verification/android-local-notifications.md), and [PR #28](https://github.com/tomstiani/varde/pull/28) / [foreground recovery verification](../verification/android-missed-alert-recovery.md). The user stories and implementation contract below describe the complete target, not a live feature/status inventory. Live checks still require operator approval.
 
 ## Problem Statement
 
