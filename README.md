@@ -12,9 +12,9 @@ This branch is a documentation-only reset. It retains the product vision, requir
 - Useful rich views built from approved components, such as text, metrics, charts, tables, and simple flows.
 - Original alert text available independently of rich-view generation.
 - Model-selected presentations grounded in supplied data, without executable generated code or invented measurements.
-- Read-only alerts initially, with interactive actions deferred.
+- Read-only alerts initially, with [alert responses](docs/specs/alert-responses.md) deferred.
 
-The backend platform, push-delivery mechanism, A2UI adoption, and smallest MVP scope remain open decisions. Discussion of these options does not establish an implementation commitment.
+The backend platform, push-delivery mechanism, A2UI adoption, and smallest MVP scope remain open decisions. Discussion of these options does not establish an implementation commitment. See [A2UI for rich views](docs/research/a2ui.md) for current A2UI findings.
 
 ## Retained specifications
 
